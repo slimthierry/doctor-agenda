@@ -34,7 +34,8 @@ const DURATIONS = [15, 20, 30, 45, 60];
 export default function NewAppointmentScreen() {
   const navigation = useNavigation<Nav>();
   const { params } = useRoute<R>();
-  const { establishments, appointments, settings, availability, patients, addAppointment } = useStore();
+  const { establishments, appointments, settings, availability, patients, addAppointment } =
+    useStore();
 
   const [patientName, setPatientName] = useState('');
   const [patientPhone, setPatientPhone] = useState('');
@@ -42,7 +43,7 @@ export default function NewAppointmentScreen() {
   const [time, setTime] = useState<string | null>(null);
   const [durationMin, setDurationMin] = useState(30);
   const [establishmentId, setEstablishmentId] = useState(
-    settings.defaultEstablishmentId ?? establishments[0]?.id ?? '',
+    settings.defaultEstablishmentId ?? establishments[0]?.id ?? ''
   );
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -52,27 +53,29 @@ export default function NewAppointmentScreen() {
     const q = patientPhone.trim().toLowerCase();
     if (q.length < 3) return [];
     return patients
-      .filter((p) => p.phone.includes(q) || p.name.toLowerCase().includes(patientName.trim().toLowerCase()))
+      .filter(
+        p => p.phone.includes(q) || p.name.toLowerCase().includes(patientName.trim().toLowerCase())
+      )
       .slice(0, 5);
   }, [patients, patientName, patientPhone]);
   const [recur, setRecur] = useState<'none' | 'weekly' | 'biweekly' | 'monthly'>('none');
   const [occurrences, setOccurrences] = useState(4);
   const seriesId = useMemo(
-    () => (recur === 'none' ? undefined : `ser-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`),
-    [recur],
+    () =>
+      recur === 'none'
+        ? undefined
+        : `ser-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+    [recur]
   );
 
   const rules = useMemo(
-    () => availability.length > 0 ? availability : defaultRules(),
-    [availability],
+    () => (availability.length > 0 ? availability : defaultRules()),
+    [availability]
   );
 
   const dayAppointments = useMemo(
-    () =>
-      appointments.filter(
-        (a) => a.date === date && (a.status ?? 'confirmed') !== 'canceled',
-      ),
-    [appointments, date],
+    () => appointments.filter(a => a.date === date && (a.status ?? 'confirmed') !== 'canceled'),
+    [appointments, date]
   );
 
   const slots = useMemo(() => {
@@ -87,7 +90,7 @@ export default function NewAppointmentScreen() {
       nowMinutes: isToday ? nowMin : undefined,
     });
     const nowTotal = isToday ? nowMin : Number.MAX_SAFE_INTEGER;
-    return free.map((time) => ({
+    return free.map(time => ({
       time,
       disabled: minutesOf(time) <= nowTotal,
     }));
@@ -108,8 +111,8 @@ export default function NewAppointmentScreen() {
     }
 
     if (time) {
-      const clash = dayAppointments.some(
-        (a) => overlaps(minutesOf(time), durationMin, minutesOf(a.time), a.durationMin),
+      const clash = dayAppointments.some(a =>
+        overlaps(minutesOf(time), durationMin, minutesOf(a.time), a.durationMin)
       );
       if (clash) {
         setError("Ce créneau vient d'être pris, choisissez-en un autre.");
@@ -131,7 +134,9 @@ export default function NewAppointmentScreen() {
     const skipped: string[] = [];
     for (const d of seriesDates) {
       const ok = !dayAppointments.some(
-        (a) => a.date === d && overlaps(minutesOf(time ?? '00:00'), durationMin, minutesOf(a.time), a.durationMin),
+        a =>
+          a.date === d &&
+          overlaps(minutesOf(time ?? '00:00'), durationMin, minutesOf(a.time), a.durationMin)
       );
       if (ok) {
         createdDates.push(d);
@@ -164,7 +169,7 @@ export default function NewAppointmentScreen() {
           'Série créée',
           `${createdDates.length}/${seriesDates.length} créneau(x) programmé(s) sur ${occurrences} occurrence(s).` +
             (skipped.length > 0 ? ` ${skipped.length} ignoré(s) (conflit).` : ''),
-          [{ text: 'OK', onPress: () => navigation.goBack() }],
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
         );
       }
     } catch (e) {
@@ -187,7 +192,7 @@ export default function NewAppointmentScreen() {
           placeholder="Nom et prénom du patient"
           placeholderTextColor={colors.textFaint}
           value={patientName}
-          onChangeText={(t) => {
+          onChangeText={t => {
             setPatientName(t);
             setError(null);
           }}
@@ -206,7 +211,7 @@ export default function NewAppointmentScreen() {
             <Text style={styles.label}>Patients connus</Text>
             <FlatList
               data={knownPatients}
-              keyExtractor={(item) => item.id}
+              keyExtractor={item => item.id}
               renderItem={({ item }) => (
                 <Pressable
                   onPress={() => {
@@ -229,7 +234,7 @@ export default function NewAppointmentScreen() {
 
         <Text style={styles.label}>Établissement</Text>
         <View style={styles.wrap}>
-          {establishments.map((est) => (
+          {establishments.map(est => (
             <Chip
               key={est.id}
               label={est.name}
@@ -284,7 +289,7 @@ export default function NewAppointmentScreen() {
           <>
             <Text style={[styles.label, { marginTop: 18 }]}>Occurrences</Text>
             <View style={styles.wrap}>
-              {Array.from({ length: 11 }, (_, i) => i + 2).map((n) => (
+              {Array.from({ length: 11 }, (_, i) => i + 2).map(n => (
                 <Chip
                   key={n}
                   label={`${n}`}
@@ -300,7 +305,7 @@ export default function NewAppointmentScreen() {
 
         <Text style={styles.label}>Durée</Text>
         <View style={styles.wrap}>
-          {DURATIONS.map((d) => (
+          {DURATIONS.map(d => (
             <Chip
               key={d}
               label={`${d} min`}
@@ -331,7 +336,11 @@ export default function NewAppointmentScreen() {
 
       <View style={styles.footer}>
         <Pressable
-          style={({ pressed }) => [styles.saveBtn, pressed && { opacity: 0.85 }, saving && { opacity: 0.6 }]}
+          style={({ pressed }) => [
+            styles.saveBtn,
+            pressed && { opacity: 0.85 },
+            saving && { opacity: 0.6 },
+          ]}
           onPress={onSave}
           disabled={saving}
           accessibilityLabel="Créer le rendez-vous"
@@ -342,9 +351,7 @@ export default function NewAppointmentScreen() {
           ) : (
             <Ionicons name="checkmark" size={20} color={colors.white} />
           )}
-          <Text style={styles.saveText}>
-            {saving ? 'Création...' : 'Créer le rendez-vous'}
-          </Text>
+          <Text style={styles.saveText}>{saving ? 'Création...' : 'Créer le rendez-vous'}</Text>
         </Pressable>
       </View>
     </KeyboardAvoidingView>
@@ -387,7 +394,14 @@ const styles = StyleSheet.create({
   errorText: { color: colors.danger, fontSize: 13, fontWeight: '600' },
   patientList: { marginTop: 16 },
   patientFlat: { maxHeight: 220 },
-  patientRow: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: 12, marginBottom: 8 },
+  patientRow: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: 12,
+    marginBottom: 8,
+  },
   patientRowName: { fontSize: 14, fontWeight: '700', color: colors.text },
   patientRowPhone: { fontSize: 12.5, color: colors.textMuted, marginTop: 2 },
   pressed: { opacity: 0.75 },

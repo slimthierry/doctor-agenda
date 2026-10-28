@@ -12,7 +12,7 @@ export function overlaps(
   aStart: number,
   aDuration: number,
   bStart: number,
-  bDuration: number,
+  bDuration: number
 ): boolean {
   return aStart < bStart + bDuration && bStart < aStart + aDuration;
 }
@@ -36,11 +36,13 @@ export function defaultRules(): AvailabilityRule[] {
 export function rulesForDay(
   rules: AvailabilityRule[],
   date: string,
-  establishmentId?: string,
+  establishmentId?: string
 ): AvailabilityRule[] {
   const weekday = weekdayOf(date);
   return rules.filter(
-    (r) => r.weekday === weekday && (!r.establishmentId || !establishmentId || r.establishmentId === establishmentId),
+    r =>
+      r.weekday === weekday &&
+      (!r.establishmentId || !establishmentId || r.establishmentId === establishmentId)
   );
 }
 
@@ -68,7 +70,7 @@ export function freeSlots({
   establishmentId,
   nowMinutes,
 }: FreeSlotOptions): string[] {
-  const taken = appointments.filter((a) => (a.status ?? 'confirmed') !== 'canceled');
+  const taken = appointments.filter(a => (a.status ?? 'confirmed') !== 'canceled');
   const dayRules = rulesForDay(rules, date, establishmentId);
   const slots = new Set<string>();
   for (const rule of dayRules) {
@@ -77,7 +79,7 @@ export function freeSlots({
     let t = frm;
     while (t + durationMin <= to) {
       const time = hhmm(t);
-      const busy = taken.some((a) => overlaps(t, durationMin, minutesOf(a.time), a.durationMin));
+      const busy = taken.some(a => overlaps(t, durationMin, minutesOf(a.time), a.durationMin));
       if (!busy) {
         slots.add(time);
       }
@@ -87,7 +89,7 @@ export function freeSlots({
   let result = [...slots].sort();
   const isToday = date === new Date().toISOString().slice(0, 10);
   if (isToday && nowMinutes !== undefined) {
-    result = result.filter((t) => minutesOf(t) > nowMinutes);
+    result = result.filter(t => minutesOf(t) > nowMinutes);
   }
   return result;
 }

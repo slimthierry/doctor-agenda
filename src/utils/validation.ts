@@ -32,7 +32,7 @@ export function validateTime(time: string | null): ValidationError | null {
   }
   const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
   if (!timeRegex.test(time)) {
-    return { field: 'time', message: 'Format d\'heure invalide.' };
+    return { field: 'time', message: "Format d'heure invalide." };
   }
   return null;
 }

@@ -13,6 +13,7 @@
 ## Étape 2 : Formater les colonnes
 
 ### Largeur des colonnes recommandées :
+
 - N° : 40px
 - Catégorie : 120px
 - Nom de l'application : 250px
@@ -27,6 +28,7 @@
 - Notes : 300px
 
 ### Méthode :
+
 1. Sélectionnez toute la feuille (Ctrl+A ou Cmd+A)
 2. Cliquez sur **Format** > **Retour à la ligne automatique**
 3. Ajustez manuellement les largeurs ou utilisez **Format** > **Dimensionnement** > **Ajuster les colonnes**
@@ -34,50 +36,60 @@
 ## Étape 3 : Ajouter un formatage conditionnel
 
 ### Pour la colonne "Statut" (colonne E) :
+
 1. Sélectionnez la colonne E (Statut)
 2. Cliquez sur **Format** > **Formatage conditionnel**
 3. Ajoutez les règles suivantes :
 
 **Règle 1 - Actif (Vert) :**
+
 - Cellule vide : Non
 - Contient : "Actif"
 - Style de mise en forme : Vert clair, texte vert foncé
 
 **Règle 2 - Installé (Jaune) :**
+
 - Cellule vide : Non
 - Contient : "Installé"
 - Style de mise en forme : Jaune clair, texte orange foncé
 
 **Règle 3 - À activer (Rouge) :**
+
 - Cellule vide : Non
 - Contient : "À activer"
 - Style de mise en forme : Rouge clair, texte rouge foncé
 
 **Règle 4 - Inactif (Gris) :**
+
 - Cellule vide : Non
 - Contient : "Inactif"
 - Style de mise en forme : Gris clair, texte gris foncé
 
 ### Pour la colonne "Priorité" (colonne F) :
+
 1. Sélectionnez la colonne F (Priorité)
 2. Cliquez sur **Format** > **Formatage conditionnel**
 3. Ajoutez les règles :
 
 **Règle 1 - Haute (Rouge) :**
+
 - Contient : "Haute"
 - Style : Fond rouge clair, texte rouge
 
 **Règle 2 - Moyenne (Orange) :**
+
 - Contient : "Moyenne"
 - Style : Fond orange clair, texte orange
 
 **Règle 3 - Basse (Vert) :**
+
 - Contient : "Basse"
 - Style : Fond vert clair, texte vert
 
 ## Étape 4 : Créer des menus déroulants (Validation des données)
 
 ### Pour la colonne "Statut" (E) :
+
 1. Sélectionnez E2:E45
 2. Cliquez sur **Données** > **Validation des données**
 3. Critère : "Liste déroulante dans une plage"
@@ -86,6 +98,7 @@
 6. Cliquez sur **Terminé**
 
 ### Pour la colonne "Priorité" (F) :
+
 1. Sélectionnez F2:F45
 2. Cliquez sur **Données** > **Validation des données**
 3. Critère : "Liste déroulante dans une plage"
@@ -93,6 +106,7 @@
 5. Cliquez sur **Terminé**
 
 ### Pour la colonne "Catégorie" (B) :
+
 1. Sélectionnez B2:B45
 2. Cliquez sur **Données** > **Validation des données**
 3. Critère : "Liste déroulante dans une plage"
@@ -125,6 +139,7 @@
 ## Étape 8 : Personnaliser l'apparence
 
 ### Titre du document :
+
 1. Sélectionnez la ligne 1
 2. Cliquez sur **Format** > **Texte** > **Gras**
 3. Couleur de fond : Bleu clair (#E3F2FD)
@@ -132,6 +147,7 @@
 5. Alignement : Centré
 
 ### Bordures :
+
 1. Sélectionnez tout le tableau (A1:L45)
 2. Cliquez sur **Format** > **Bordures**
 3. Choisissez "Toutes les bordures"
@@ -155,23 +171,27 @@
 ## Astuces supplémentaires
 
 ### Raccourcis clavier utiles :
+
 - **Ctrl/Cmd + F** : Rechercher dans la feuille
 - **Ctrl/Cmd + H** : Remplacer
 - **Ctrl/Cmd + Z** : Annuler
 - **Ctrl/Cmd + Y** : Rétablir
 
 ### Formules utiles :
+
 - `=COUNTIF(E2:E45, "Actif")` : Compter les apps actives
 - `=COUNTIF(F2:F45, "Haute")` : Compter les priorités hautes
 - `=FILTER(A2:L45, B2:B45="Chirurgie")` : Filtrer par catégorie
 
 ### Notification de modifications :
+
 1. Cliquez sur **Outils** > **Règles de notification**
 2. Configurez pour recevoir un email quand quelqu'un modifie
 
 ## Sauvegarde
 
 N'oubliez pas de :
+
 - Télécharger régulièrement en CSV (Fichier > Télécharger > CSV)
 - Créer une copie de sauvegarde (Fichier > Créer une copie)
 - Activer l'historique des versions (Fichier > Historique des versions)

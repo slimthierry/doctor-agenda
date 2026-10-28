@@ -17,21 +17,22 @@ Rendre l'app crédible pour un **praticien libéral (cabinet)** en implémentant
 
 ## Décisions de conception (validées)
 
-| Sujet | Décision |
-|---|---|
-| Moteur de créneaux app | Portage exact de `app/slots.py` + `app/utils.py` (`overlaps`, `weekday_of` 0=dim, `free_slots`) — une seule vérité métier |
-| Disponibilités | Local-first : règles stockées localement, `PUT /api/availability` au save si serveur configuré, pull au sync. Fallback lun-sam 08:00–18:00 si aucune règle (comportement seed) |
-| Récurrence | Champ `series_id` nullable ajouté au modèle `Appointment` (migration `0002`). Création en lot côté app, IDs clients → upsert sync existant OK |
-| Page booking | HTML autonome servie par FastAPI sur `GET /b/{slug}` (JS inline, zéro infra). Nouveau `GET /booking/{slug}` public (doctor + establishments) pour alimenter la page |
-| Patients | **Dérivés** des rendez-vous agrégés par `patient_phone` (nom = dernière valeur) — pas d'entité à migrer, couvre aussi les RDV `source:patient` après pull |
-| Rappels serveur | Tâche de fond FastAPI (lifespan) toutes les ~45 s + table colonnes `reminder_sent_at` (+ reset si date/heure modifiée). Sender abstrait : Twilio SMS si `TWILIO_*` présent, sinon sender log (marque envoyé pour éviter les boucles). Lead configurable `REMINDER_LEAD_MIN` (défaut 60) |
-| Hors périmètre | No-show, statistiques, onboarding, plans d'abonnement (étapes P2/P3 reportées) |
+| Sujet                  | Décision                                                                                                                                                                                                                                                                                |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Moteur de créneaux app | Portage exact de `app/slots.py` + `app/utils.py` (`overlaps`, `weekday_of` 0=dim, `free_slots`) — une seule vérité métier                                                                                                                                                               |
+| Disponibilités         | Local-first : règles stockées localement, `PUT /api/availability` au save si serveur configuré, pull au sync. Fallback lun-sam 08:00–18:00 si aucune règle (comportement seed)                                                                                                          |
+| Récurrence             | Champ `series_id` nullable ajouté au modèle `Appointment` (migration `0002`). Création en lot côté app, IDs clients → upsert sync existant OK                                                                                                                                           |
+| Page booking           | HTML autonome servie par FastAPI sur `GET /b/{slug}` (JS inline, zéro infra). Nouveau `GET /booking/{slug}` public (doctor + establishments) pour alimenter la page                                                                                                                     |
+| Patients               | **Dérivés** des rendez-vous agrégés par `patient_phone` (nom = dernière valeur) — pas d'entité à migrer, couvre aussi les RDV `source:patient` après pull                                                                                                                               |
+| Rappels serveur        | Tâche de fond FastAPI (lifespan) toutes les ~45 s + table colonnes `reminder_sent_at` (+ reset si date/heure modifiée). Sender abstrait : Twilio SMS si `TWILIO_*` présent, sinon sender log (marque envoyé pour éviter les boucles). Lead configurable `REMINDER_LEAD_MIN` (défaut 60) |
+| Hors périmètre         | No-show, statistiques, onboarding, plans d'abonnement (étapes P2/P3 reportées)                                                                                                                                                                                                          |
 
 ---
 
 ## Phase 1 — Backend : modèle étendu + page booking
 
 **Fichiers :**
+
 - `app/models.py` : `Appointment.series_id: str | None`, `Appointment.reminder_sent_at: str | None`
 - `alembic/versions/0002_series_reminders.py` : `op.add_column` × 2 (nullable, style 0001)
 - `app/schemas.py` : inclure `series_id`, `reminder_sent_at` dans `appointment_dict`
@@ -51,6 +52,7 @@ Rendre l'app crédible pour un **praticien libéral (cabinet)** en implémentant
 ## Phase 2 — App : moteur de créneaux + disponibilités
 
 **Fichiers :**
+
 - `src/types/index.ts` : `AvailabilityRule {id, establishmentId?, weekday, start, end}`, `Appointment.seriesId?`, `Settings.doctorSlug?`, `Settings.availabilityUpdatedAt?`
 - `src/utils/slots.ts` (nouveau) : `minutesOf`, `hhmm`, `overlaps`, `weekdayOf` (JS `getDay()`), `defaultRules()` (lun-sam 08:00–18:00), `rulesForDay(rules, date, establishmentId)`, `freeSlots(rules, appointments, date, durationMin, establishmentId, nowMinutes?)` — logique identique à `free_slots` backend
 - `src/services/storage.ts` : clé `@doctor-agenda/availability` + load/save

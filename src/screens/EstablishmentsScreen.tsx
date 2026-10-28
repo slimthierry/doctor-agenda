@@ -1,26 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useStore } from '../store/StoreContext';
 import { colors, palette, radius, shadow } from '../theme';
 
 export default function EstablishmentsScreen() {
-  const {
-    establishments,
-    appointments,
-    addEstablishment,
-    removeEstablishment,
-  } = useStore();
+  const { establishments, appointments, addEstablishment, removeEstablishment } = useStore();
 
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
@@ -29,7 +16,7 @@ export default function EstablishmentsScreen() {
 
   function onAdd() {
     if (!name.trim()) {
-      Alert.alert('Nom requis', 'Indiquez le nom de l\'établissement.');
+      Alert.alert('Nom requis', "Indiquez le nom de l'établissement.");
       return;
     }
     addEstablishment(name.trim(), address.trim() || undefined, color);
@@ -40,7 +27,7 @@ export default function EstablishmentsScreen() {
   }
 
   function onRemove(id: string, label: string) {
-    const count = appointments.filter((a) => a.establishmentId === id).length;
+    const count = appointments.filter(a => a.establishmentId === id).length;
     Alert.alert(
       'Supprimer',
       count > 0
@@ -49,7 +36,7 @@ export default function EstablishmentsScreen() {
       [
         { text: 'Annuler', style: 'cancel' },
         { text: 'Supprimer', style: 'destructive', onPress: () => removeEstablishment(id) },
-      ],
+      ]
     );
   }
 
@@ -61,17 +48,15 @@ export default function EstablishmentsScreen() {
           Vos lieux d'exercice : chaque rendez-vous peut être rattaché à l'un d'eux.
         </Text>
 
-        {establishments.map((est) => {
-          const count = appointments.filter((a) => a.establishmentId === est.id).length;
+        {establishments.map(est => {
+          const count = appointments.filter(a => a.establishmentId === est.id).length;
           return (
             <View key={est.id} style={styles.card}>
               <View style={[styles.colorBar, { backgroundColor: est.color }]} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.name}>{est.name}</Text>
                 {!!est.address && <Text style={styles.address}>{est.address}</Text>}
-                <Text style={styles.count}>
-                  {count} rendez-vous enregistrés
-                </Text>
+                <Text style={styles.count}>{count} rendez-vous enregistrés</Text>
               </View>
               <Pressable
                 onPress={() => onRemove(est.id, est.name)}
@@ -106,7 +91,7 @@ export default function EstablishmentsScreen() {
             />
             <Text style={styles.formLabel}>Couleur</Text>
             <View style={styles.colorsRow}>
-              {palette.map((c) => (
+              {palette.map(c => (
                 <Pressable
                   key={c}
                   onPress={() => setColor(c)}
@@ -122,16 +107,31 @@ export default function EstablishmentsScreen() {
               ))}
             </View>
             <View style={styles.formActions}>
-              <Pressable style={styles.cancelBtn} onPress={() => setAdding(false)} accessibilityLabel="Annuler" accessibilityRole="button">
+              <Pressable
+                style={styles.cancelBtn}
+                onPress={() => setAdding(false)}
+                accessibilityLabel="Annuler"
+                accessibilityRole="button"
+              >
                 <Text style={styles.cancelText}>Annuler</Text>
               </Pressable>
-              <Pressable style={styles.addBtn} onPress={onAdd} accessibilityLabel="Ajouter l\'établissement" accessibilityRole="button">
+              <Pressable
+                style={styles.addBtn}
+                onPress={onAdd}
+                accessibilityLabel="Ajouter l\'établissement"
+                accessibilityRole="button"
+              >
                 <Text style={styles.addText}>Ajouter</Text>
               </Pressable>
             </View>
           </View>
         ) : (
-          <Pressable style={styles.addCard} onPress={() => setAdding(true)} accessibilityLabel="Ajouter un établissement" accessibilityRole="button">
+          <Pressable
+            style={styles.addCard}
+            onPress={() => setAdding(true)}
+            accessibilityLabel="Ajouter un établissement"
+            accessibilityRole="button"
+          >
             <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
             <Text style={styles.addCardText}>Ajouter un établissement</Text>
           </Pressable>

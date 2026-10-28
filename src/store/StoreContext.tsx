@@ -1,11 +1,4 @@
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import {
   fetchAvailability,
@@ -28,7 +21,14 @@ import {
   saveSettings,
   DEFAULT_SETTINGS,
 } from '../services/storage';
-import { Appointment, AvailabilityRule, Establishment, PatientSummary, Settings, SyncResult } from '../types';
+import {
+  Appointment,
+  AvailabilityRule,
+  Establishment,
+  PatientSummary,
+  Settings,
+  SyncResult,
+} from '../types';
 import { addDays, todayISO } from '../utils/date';
 import { colors, palette } from '../theme';
 
@@ -40,7 +40,9 @@ interface StoreValue {
   syncing: boolean;
   availability: AvailabilityRule[];
   saveAvailability: (rules: AvailabilityRule[]) => Promise<void>;
-  addAppointment: (data: Omit<Appointment, 'id' | 'createdAt' | 'status' | 'updatedAt'>) => Appointment;
+  addAppointment: (
+    data: Omit<Appointment, 'id' | 'createdAt' | 'status' | 'updatedAt'>
+  ) => Appointment;
   updateAppointment: (id: string, patch: Partial<Appointment>) => void;
   removeAppointment: (id: string) => void;
   addEstablishment: (name: string, address?: string, color?: string) => Establishment;
@@ -81,7 +83,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         loadAvailability(),
       ]);
       // Rétrocompat : les anciens RDV n'ont pas updatedAt
-      setAppointments(a.map((x) => ({ ...x, updatedAt: x.updatedAt ?? x.createdAt })));
+      setAppointments(a.map(x => ({ ...x, updatedAt: x.updatedAt ?? x.createdAt })));
       setEstablishments(e.length ? e : SEED_ESTABLISHMENTS);
       if (!e.length) await saveEstablishments(SEED_ESTABLISHMENTS);
       setSettings(s);
@@ -100,61 +102,55 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     void saveEstablishments(list);
   }, []);
 
-  const saveAvailability = useCallback<StoreValue['saveAvailability']>(async (rules) => {
-    setAvailability(rules);
-    void persistAvailability(rules);
-    if (isServerConfigured(settings)) {
-      try {
-        await putAvailability(settings.serverUrl!.trim(), settings.doctorApiKey!.trim(), rules);
-      } catch {
-        // local-first : l'echec serveur ne doit pas perdre les regles locales
+  const saveAvailability = useCallback<StoreValue['saveAvailability']>(
+    async rules => {
+      setAvailability(rules);
+      void persistAvailability(rules);
+      if (isServerConfigured(settings)) {
+        try {
+          await putAvailability(settings.serverUrl!.trim(), settings.doctorApiKey!.trim(), rules);
+        } catch {
+          // local-first : l'echec serveur ne doit pas perdre les regles locales
+        }
       }
-    }
-  }, [settings]);
-
-  const addAppointment = useCallback<StoreValue['addAppointment']>(
-    (data) => {
-      const now = new Date().toISOString();
-      const appt: Appointment = {
-        ...data,
-        id: uid(),
-        status: 'draft',
-        createdAt: now,
-        updatedAt: now,
-      };
-      setAppointments((prev) => {
-        const next = [...prev, appt];
-        void saveAppointments(next);
-        return next;
-      });
-      return appt;
     },
-    [],
+    [settings]
   );
 
-  const updateAppointment = useCallback<StoreValue['updateAppointment']>(
-    (id, patch) => {
-      setAppointments((prev) => {
-        const next = prev.map((a) =>
-          a.id === id ? { ...a, ...patch, updatedAt: new Date().toISOString() } : a,
-        );
-        void saveAppointments(next);
-        return next;
-      });
-    },
-    [],
-  );
+  const addAppointment = useCallback<StoreValue['addAppointment']>(data => {
+    const now = new Date().toISOString();
+    const appt: Appointment = {
+      ...data,
+      id: uid(),
+      status: 'draft',
+      createdAt: now,
+      updatedAt: now,
+    };
+    setAppointments(prev => {
+      const next = [...prev, appt];
+      void saveAppointments(next);
+      return next;
+    });
+    return appt;
+  }, []);
 
-  const removeAppointment = useCallback<StoreValue['removeAppointment']>(
-    (id) => {
-      setAppointments((prev) => {
-        const next = prev.filter((a) => a.id !== id);
-        void saveAppointments(next);
-        return next;
-      });
-    },
-    [],
-  );
+  const updateAppointment = useCallback<StoreValue['updateAppointment']>((id, patch) => {
+    setAppointments(prev => {
+      const next = prev.map(a =>
+        a.id === id ? { ...a, ...patch, updatedAt: new Date().toISOString() } : a
+      );
+      void saveAppointments(next);
+      return next;
+    });
+  }, []);
+
+  const removeAppointment = useCallback<StoreValue['removeAppointment']>(id => {
+    setAppointments(prev => {
+      const next = prev.filter(a => a.id !== id);
+      void saveAppointments(next);
+      return next;
+    });
+  }, []);
 
   const addEstablishment = useCallback<StoreValue['addEstablishment']>(
     (name, address, color) => {
@@ -167,26 +163,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       persistEstablishments([...establishments, est]);
       return est;
     },
-    [establishments, persistEstablishments],
+    [establishments, persistEstablishments]
   );
 
   const removeEstablishment = useCallback<StoreValue['removeEstablishment']>(
-    (id) => {
-      persistEstablishments(establishments.filter((e) => e.id !== id));
+    id => {
+      persistEstablishments(establishments.filter(e => e.id !== id));
     },
-    [establishments, persistEstablishments],
+    [establishments, persistEstablishments]
   );
 
-  const updateSettings = useCallback<StoreValue['updateSettings']>(
-    (patch) => {
-      setSettings((prev) => {
-        const next = { ...prev, ...patch };
-        void saveSettings(next);
-        return next;
-      });
-    },
-    [],
-  );
+  const updateSettings = useCallback<StoreValue['updateSettings']>(patch => {
+    setSettings(prev => {
+      const next = { ...prev, ...patch };
+      void saveSettings(next);
+      return next;
+    });
+  }, []);
 
   const loadDemoData = useCallback(() => {
     const today = todayISO();
@@ -247,7 +240,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setSyncing(true);
     try {
       // 1. Pousser l'état local (upsert idempotent côté serveur)
-      const local = appointments.map((a) => ({
+      const local = appointments.map(a => ({
         ...a,
         updatedAt: a.updatedAt ?? a.createdAt,
       }));
@@ -257,7 +250,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const pullRes = await pullAppointments(
         base,
         key,
-        settings.lastSyncAt ?? '1970-01-01T00:00:00.000Z',
+        settings.lastSyncAt ?? '1970-01-01T00:00:00.000Z'
       );
 
       // 2b. Tirer les disponibilités serveur (miroir du local-first)
@@ -283,7 +276,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
 
       // 3. Fusion last-write-wins sur updatedAt
-      const map = new Map<string, Appointment>(local.map((a) => [a.id, a]));
+      const map = new Map<string, Appointment>(local.map(a => [a.id, a]));
       for (const s of pullRes.appointments) {
         const incoming = fromServer(s);
         const current = map.get(incoming.id);
@@ -315,10 +308,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       console.error('Sync error:', e);
       const message = e instanceof Error ? e.message : 'Échec de la synchro';
       if (message.includes('fetch') || message.includes('network')) {
-        return { ok: false, pushed: 0, pulled: 0, message: 'Erreur de connexion. Vérifiez votre réseau et l\'URL du serveur.' };
+        return {
+          ok: false,
+          pushed: 0,
+          pulled: 0,
+          message: "Erreur de connexion. Vérifiez votre réseau et l'URL du serveur.",
+        };
       }
       if (message.includes('401') || message.includes('403')) {
-        return { ok: false, pushed: 0, pulled: 0, message: 'Clé API invalide. Vérifiez vos identifiants.' };
+        return {
+          ok: false,
+          pushed: 0,
+          pulled: 0,
+          message: 'Clé API invalide. Vérifiez vos identifiants.',
+        };
       }
       if (message.includes('404')) {
         return { ok: false, pushed: 0, pulled: 0, message: 'URL du serveur introuvable.' };
@@ -332,10 +335,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const appointmentsOn = useCallback(
     (date: string, establishmentId?: string) =>
       appointments
-        .filter((a) => a.date === date)
-        .filter((a) => !establishmentId || a.establishmentId === establishmentId)
+        .filter(a => a.date === date)
+        .filter(a => !establishmentId || a.establishmentId === establishmentId)
         .sort((x, y) => x.time.localeCompare(y.time)),
-    [appointments],
+    [appointments]
   );
 
   const patients = useMemo<PatientSummary[]>(() => {
@@ -401,7 +404,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       syncNow,
       appointmentsOn,
       patients,
-    ],
+    ]
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

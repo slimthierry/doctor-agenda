@@ -21,11 +21,7 @@ export default function Slot({
     <Pressable
       disabled={disabled}
       onPress={onPress}
-      style={[
-        styles.slot,
-        active && styles.slotActive,
-        disabled && styles.slotDisabled,
-      ]}
+      style={[styles.slot, active && styles.slotActive, disabled && styles.slotDisabled]}
       accessibilityLabel={accessibilityLabel || `Créneau ${time}`}
       accessibilityRole="button"
       accessibilityState={{ selected: active, disabled }}

@@ -26,24 +26,26 @@ const TIME_OPTIONS: string[] = (() => {
 export default function AvailabilityScreen() {
   const navigation = useNavigation<Nav>();
   const { availability, saveAvailability } = useStore();
-  const [rules, setRules] = useState<AvailabilityRule[]>(availability.length > 0 ? availability : defaultRules());
+  const [rules, setRules] = useState<AvailabilityRule[]>(
+    availability.length > 0 ? availability : defaultRules()
+  );
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
 
   const rows = useMemo(() => {
     const map = new Map<number, AvailabilityRule>();
     for (const r of rules) map.set(r.weekday, r);
-    return Array.from({ length: 7 }, (_, i) => map.get(i)).filter((r): r is AvailabilityRule => Boolean(r));
+    return Array.from({ length: 7 }, (_, i) => map.get(i)).filter((r): r is AvailabilityRule =>
+      Boolean(r)
+    );
   }, [rules]);
 
   function patch(weekday: number, field: 'start' | 'end', value: string) {
-    setRules((prev) => prev.map((r) => (r.weekday === weekday ? { ...r, [field]: value } : r)));
+    setRules(prev => prev.map(r => (r.weekday === weekday ? { ...r, [field]: value } : r)));
   }
 
   function toggleClosed(weekday: number) {
-    setRules((prev) =>
-      prev.map((r) => (r.weekday === weekday ? { ...r, end: r.start } : r)),
-    );
+    setRules(prev => prev.map(r => (r.weekday === weekday ? { ...r, end: r.start } : r)));
   }
 
   async function onSave() {
@@ -70,12 +72,12 @@ export default function AvailabilityScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Mes horaires</Text>
         <Text style={styles.hint}>
-          Les créneaux proposés dans l&apos;appli respectent ces plages. Sans horaire
-          configuré, l&apos;app utilise le mode par défaut (lun–sam 08:00–18:00).
+          Les créneaux proposés dans l&apos;appli respectent ces plages. Sans horaire configuré,
+          l&apos;app utilise le mode par défaut (lun–sam 08:00–18:00).
         </Text>
 
         <View style={styles.card}>
-          {rows.map((r) => (
+          {rows.map(r => (
             <View key={r.weekday} style={styles.row}>
               <View style={styles.rowHead}>
                 <Text style={styles.day}>{WEEKDAYS[r.weekday]}</Text>
@@ -96,13 +98,15 @@ export default function AvailabilityScreen() {
                 <View style={styles.timeCol}>
                   <Text style={styles.timeLabel}>Début</Text>
                   <View style={styles.chips}>
-                    {TIME_OPTIONS.map((t) => (
+                    {TIME_OPTIONS.map(t => (
                       <Pressable
                         key={t}
                         onPress={() => patch(r.weekday, 'start', t)}
                         style={[styles.chip, r.start === t && styles.chipActive]}
                       >
-                        <Text style={[styles.chipText, r.start === t && styles.chipTextActive]}>{t}</Text>
+                        <Text style={[styles.chipText, r.start === t && styles.chipTextActive]}>
+                          {t}
+                        </Text>
                       </Pressable>
                     ))}
                   </View>
@@ -110,13 +114,15 @@ export default function AvailabilityScreen() {
                 <View style={styles.timeCol}>
                   <Text style={styles.timeLabel}>Fin</Text>
                   <View style={styles.chips}>
-                    {TIME_OPTIONS.map((t) => (
+                    {TIME_OPTIONS.map(t => (
                       <Pressable
                         key={t}
                         onPress={() => patch(r.weekday, 'end', t)}
                         style={[styles.chip, r.end === t && styles.chipActive]}
                       >
-                        <Text style={[styles.chipText, r.end === t && styles.chipTextActive]}>{t}</Text>
+                        <Text style={[styles.chipText, r.end === t && styles.chipTextActive]}>
+                          {t}
+                        </Text>
                       </Pressable>
                     ))}
                   </View>
@@ -139,7 +145,9 @@ export default function AvailabilityScreen() {
           ) : (
             <Ionicons name="checkmark" size={20} color={colors.white} />
           )}
-          <Text style={styles.saveText}>{saving ? 'Sauvegarde...' : savedFlash ? 'Sauvegardé' : 'Sauvegarder'}</Text>
+          <Text style={styles.saveText}>
+            {saving ? 'Sauvegarde...' : savedFlash ? 'Sauvegardé' : 'Sauvegarder'}
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -151,19 +159,51 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 32 },
   title: { fontSize: 26, fontWeight: '800', color: colors.text, marginBottom: 4 },
   hint: { fontSize: 13, color: colors.textMuted, marginBottom: 8 },
-  card: { backgroundColor: colors.white, borderRadius: radius.lg, padding: 16, gap: 16, ...shadow.card },
+  card: {
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    padding: 16,
+    gap: 16,
+    ...shadow.card,
+  },
   row: { gap: 10 },
   rowHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   day: { fontSize: 15, fontWeight: '800', color: colors.text },
   times: { flexDirection: 'row', gap: 12 },
   timeCol: { flex: 1, gap: 4 },
-  timeLabel: { fontSize: 11, fontWeight: '700', color: colors.textFaint, textTransform: 'uppercase' },
+  timeLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.textFaint,
+    textTransform: 'uppercase',
+  },
   chips: { flexWrap: 'wrap', gap: 6 },
-  chip: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 6, backgroundColor: colors.bg },
+  chip: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    backgroundColor: colors.bg,
+  },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: 12, fontWeight: '700', color: colors.text },
   chipTextActive: { color: colors.white },
-  footer: { padding: 16, backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.border },
-  saveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: 15, ...shadow.card },
+  footer: {
+    padding: 16,
+    backgroundColor: colors.white,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  saveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: 15,
+    ...shadow.card,
+  },
   saveText: { color: colors.white, fontSize: 16, fontWeight: '800' },
 });

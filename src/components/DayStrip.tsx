@@ -20,7 +20,7 @@ export default function DayStrip({ selected, onSelect, days = 7 }: Props) {
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.row}
     >
-      {list.map((iso) => {
+      {list.map(iso => {
         const active = iso === selected;
         const today = isToday(iso);
         return (
@@ -29,12 +29,8 @@ export default function DayStrip({ selected, onSelect, days = 7 }: Props) {
             onPress={() => onSelect(iso)}
             style={[styles.day, active && styles.dayActive]}
           >
-            <Text style={[styles.wd, active && styles.wdActive]}>
-              {weekdayShort(iso)}
-            </Text>
-            <Text style={[styles.num, active && styles.numActive]}>
-              {dayNumber(iso)}
-            </Text>
+            <Text style={[styles.wd, active && styles.wdActive]}>{weekdayShort(iso)}</Text>
+            <Text style={[styles.num, active && styles.numActive]}>{dayNumber(iso)}</Text>
             {today && <View style={[styles.dot, active && styles.dotActive]} />}
           </Pressable>
         );

@@ -58,21 +58,13 @@ function Tabs() {
       })}
     >
       <Tab.Screen name="Agenda" component={AgendaScreen} />
-      <Tab.Screen
-        name="Patients"
-        component={PatientsScreen}
-        options={{ title: 'Patients' }}
-      />
+      <Tab.Screen name="Patients" component={PatientsScreen} options={{ title: 'Patients' }} />
       <Tab.Screen
         name="Establishments"
         component={EstablishmentsScreen}
         options={{ title: 'Établissements' }}
       />
-      <Tab.Screen
-        name="Settings"
-        component={SettingsScreen}
-        options={{ title: 'Réglages' }}
-      />
+      <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: 'Réglages' }} />
     </Tab.Navigator>
   );
 }

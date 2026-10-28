@@ -13,15 +13,12 @@ interface Props {
 
 export default function AppointmentCard({ appointment, onPress }: Props) {
   const { establishments } = useStore();
-  const est = establishments.find((e) => e.id === appointment.establishmentId);
+  const est = establishments.find(e => e.id === appointment.establishmentId);
   const meta = statusMeta(appointment.status);
   const canceled = appointment.status === 'canceled';
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
-    >
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       <View style={[styles.timeCol, { borderLeftColor: est?.color ?? colors.primary }]}>
         <Text style={[styles.time, canceled && styles.strike]}>{appointment.time}</Text>
         <Text style={styles.dur}>{formatDuration(appointment.durationMin)}</Text>
@@ -53,12 +50,7 @@ export default function AppointmentCard({ appointment, onPress }: Props) {
       </View>
 
       {!!appointment.patientPhone && (
-        <Ionicons
-          name="logo-whatsapp"
-          size={16}
-          color={colors.primary}
-          style={styles.wa}
-        />
+        <Ionicons name="logo-whatsapp" size={16} color={colors.primary} style={styles.wa} />
       )}
     </Pressable>
   );

@@ -2,13 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
-import {
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AppointmentCard from '../components/AppointmentCard';
@@ -30,12 +24,12 @@ export default function AgendaScreen() {
 
   const all = useMemo(() => appointmentsOn(date), [appointmentsOn, date]);
   const list = useMemo(
-    () => (filterId ? all.filter((a) => a.establishmentId === filterId) : all),
-    [all, filterId],
+    () => (filterId ? all.filter(a => a.establishmentId === filterId) : all),
+    [all, filterId]
   );
 
-  const confirmed = all.filter((a) => a.status === 'confirmed').length;
-  const pending = all.filter((a) => a.status === 'draft').length;
+  const confirmed = all.filter(a => a.status === 'confirmed').length;
+  const pending = all.filter(a => a.status === 'draft').length;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -53,31 +47,35 @@ export default function AgendaScreen() {
           accessibilityRole="button"
         >
           <Ionicons name="today-outline" size={14} color={colors.primary} />
-          <Text style={styles.todayText}>
-            {isToday(date) ? "Aujourd'hui" : 'Aujourd’hui'}
-          </Text>
+          <Text style={styles.todayText}>{isToday(date) ? "Aujourd'hui" : 'Aujourd’hui'}</Text>
         </Pressable>
       </View>
 
       <DayStrip selected={date} onSelect={setDate} days={7} />
 
       <View style={styles.dateRow}>
-        <Pressable onPress={() => setDate(addDays(date, -1))} hitSlop={8} accessibilityLabel="Jour précédent" accessibilityRole="button">
+        <Pressable
+          onPress={() => setDate(addDays(date, -1))}
+          hitSlop={8}
+          accessibilityLabel="Jour précédent"
+          accessibilityRole="button"
+        >
           <Ionicons name="chevron-back" size={20} color={colors.textMuted} />
         </Pressable>
         <Text style={styles.dateLabel}>{formatLongDate(date)}</Text>
-        <Pressable onPress={() => setDate(addDays(date, 1))} hitSlop={8} accessibilityLabel="Jour suivant" accessibilityRole="button">
+        <Pressable
+          onPress={() => setDate(addDays(date, 1))}
+          hitSlop={8}
+          accessibilityLabel="Jour suivant"
+          accessibilityRole="button"
+        >
           <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
         </Pressable>
       </View>
 
       <View style={styles.filters}>
-        <Chip
-          label="Tous"
-          active={!filterId}
-          onPress={() => setFilterId(undefined)}
-        />
-        {establishments.map((est) => (
+        <Chip label="Tous" active={!filterId} onPress={() => setFilterId(undefined)} />
+        {establishments.map(est => (
           <Chip
             key={est.id}
             label={est.name}
@@ -96,7 +94,7 @@ export default function AgendaScreen() {
 
       <FlatList
         data={list}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
           <AppointmentCard

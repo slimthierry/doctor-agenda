@@ -26,10 +26,7 @@ export default function Chip({
       accessibilityState={{ selected: active }}
     >
       {!!color && <View style={[styles.chipDot, { backgroundColor: color }]} />}
-      <Text
-        style={[styles.chipText, active && styles.chipTextActive]}
-        numberOfLines={1}
-      >
+      <Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>
         {label}
       </Text>
     </Pressable>

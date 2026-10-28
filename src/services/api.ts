@@ -81,7 +81,7 @@ async function request<T>(
   base: string,
   apiKey: string,
   path: string,
-  init: RequestInit = {},
+  init: RequestInit = {}
 ): Promise<T> {
   const url = `${normalizeBase(base)}${path}`;
   const res = await fetch(url, {
@@ -99,9 +99,7 @@ async function request<T>(
     body = undefined;
   }
   if (!res.ok) {
-    const msg =
-      (body as { error?: string } | undefined)?.error ??
-      `Erreur ${res.status}`;
+    const msg = (body as { error?: string } | undefined)?.error ?? `Erreur ${res.status}`;
     throw new Error(msg);
   }
   return body as T;
@@ -147,7 +145,7 @@ export function fromServer(s: ServerAppointment): Appointment {
 export function pushAppointments(
   base: string,
   apiKey: string,
-  appointments: AppointmentInput[],
+  appointments: AppointmentInput[]
 ): Promise<PushResponse> {
   return request<PushResponse>(base, apiKey, '/api/sync/appointments', {
     method: 'POST',
@@ -158,50 +156,43 @@ export function pushAppointments(
 export function pullAppointments(
   base: string,
   apiKey: string,
-  since: string,
+  since: string
 ): Promise<PullResponse> {
   return request<PullResponse>(
     base,
     apiKey,
-    `/api/sync/appointments?since=${encodeURIComponent(since)}`,
+    `/api/sync/appointments?since=${encodeURIComponent(since)}`
   );
 }
 
 export function fetchMe(
   base: string,
-  apiKey: string,
+  apiKey: string
 ): Promise<{ doctor: { name: string; slug: string } }> {
-  return request<{ doctor: { name: string; slug: string } }>(
-    base,
-    apiKey,
-    '/api/me',
-  );
+  return request<{ doctor: { name: string; slug: string } }>(base, apiKey, '/api/me');
 }
 
-export function fetchAvailability(
-  base: string,
-  apiKey: string,
-): Promise<AvailabilityRule[]> {
-  return request<AvailabilityResponse>(base, apiKey, '/api/availability').then((r) =>
-    r.rules.map((rule) => ({
+export function fetchAvailability(base: string, apiKey: string): Promise<AvailabilityRule[]> {
+  return request<AvailabilityResponse>(base, apiKey, '/api/availability').then(r =>
+    r.rules.map(rule => ({
       id: rule.id,
       establishmentId: rule.establishment_id ?? undefined,
       weekday: rule.weekday,
       start: rule.start,
       end: rule.end,
-    })),
+    }))
   );
 }
 
 export function putAvailability(
   base: string,
   apiKey: string,
-  rules: AvailabilityRule[],
+  rules: AvailabilityRule[]
 ): Promise<AvailabilityResponse> {
   return request<AvailabilityResponse>(base, apiKey, '/api/availability', {
     method: 'PUT',
     body: JSON.stringify({
-      rules: rules.map((r) => ({
+      rules: rules.map(r => ({
         establishment_id: r.establishmentId ?? null,
         weekday: r.weekday,
         start: r.start,
@@ -214,7 +205,7 @@ export function putAvailability(
 export function fetchBookingInfo(
   base: string,
   apiKey: string,
-  slug: string,
+  slug: string
 ): Promise<BookingInfoResponse> {
   return request<BookingInfoResponse>(base, apiKey, `/booking/${encodeURIComponent(slug)}`);
 }

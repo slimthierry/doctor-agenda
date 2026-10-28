@@ -18,9 +18,7 @@ export default function PatientsScreen() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return patients;
-    return patients.filter(
-      (p) => p.name.toLowerCase().includes(q) || p.phone.includes(q),
-    );
+    return patients.filter(p => p.name.toLowerCase().includes(q) || p.phone.includes(q));
   }, [patients, query]);
 
   function renderItem({ item }: { item: PatientSummary }) {
@@ -60,12 +58,10 @@ export default function PatientsScreen() {
       </View>
       <FlatList
         data={filtered}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <Text style={styles.empty}>Aucun patient trouvé.</Text>
-        }
+        ListEmptyComponent={<Text style={styles.empty}>Aucun patient trouvé.</Text>}
       />
     </View>
   );
@@ -98,7 +94,14 @@ const styles = StyleSheet.create({
     ...shadow.card,
   },
   pressed: { opacity: 0.75 },
-  avatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
+  avatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   avatarText: { fontSize: 18, fontWeight: '800', color: colors.primary },
   body: { flex: 1, gap: 2 },
   name: { fontSize: 15, fontWeight: '700', color: colors.text },

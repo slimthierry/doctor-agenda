@@ -29,15 +29,7 @@ export function weekDays(iso: string): string[] {
 }
 
 const WD_SHORT = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
-const WD_LONG = [
-  'lundi',
-  'mardi',
-  'mercredi',
-  'jeudi',
-  'vendredi',
-  'samedi',
-  'dimanche',
-];
+const WD_LONG = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
 const MONTHS = [
   'janvier',
   'février',
@@ -81,11 +73,7 @@ export function minutesOf(time: string): number {
   return h * 60 + m;
 }
 
-export function timeSlots(
-  startHour = 7,
-  endHour = 18,
-  stepMin = 30,
-): string[] {
+export function timeSlots(startHour = 7, endHour = 18, stepMin = 30): string[] {
   const slots: string[] = [];
   for (let h = startHour; h <= endHour; h++) {
     for (let m = 0; m < 60; m += stepMin) {

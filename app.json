@@ -20,10 +20,8 @@
     },
     "android": {
       "package": "tg.liksoft.doctoragenda",
-    "permissions": ["POST_NOTIFICATIONS", "SCHEDULE_EXACT_ALARM"]
+      "permissions": ["POST_NOTIFICATIONS", "SCHEDULE_EXACT_ALARM"]
     },
-    "plugins": [
-      "expo-notifications"
-    ]
+    "plugins": ["expo-notifications"]
   }
 }

@@ -17,21 +17,19 @@ export default function PatientDetailScreen() {
   const { appointments, establishments } = useStore();
 
   const patient = appointments.find(
-    (a) => (a.patientPhone ?? '').trim() === params.id || a.patientName.trim() === params.id,
+    a => (a.patientPhone ?? '').trim() === params.id || a.patientName.trim() === params.id
   );
 
   const history = appointments
-    .filter((a) => (a.patientPhone ?? '').trim() === params.id || a.patientName.trim() === params.id)
+    .filter(a => (a.patientPhone ?? '').trim() === params.id || a.patientName.trim() === params.id)
     .sort((x, y) => y.date.localeCompare(x.date));
 
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Historique patient</Text>
-        {history.length === 0 && (
-          <Text style={styles.empty}>Aucun rendez-vous trouvé.</Text>
-        )}
-        {history.map((a) => (
+        {history.length === 0 && <Text style={styles.empty}>Aucun rendez-vous trouvé.</Text>}
+        {history.map(a => (
           <AppointmentCard
             key={a.id}
             appointment={a}

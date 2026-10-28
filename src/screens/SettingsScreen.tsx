@@ -16,10 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Chip from '../components/Chip';
-import {
-  ensureNotificationPermission,
-  scheduleReminder,
-} from '../services/notifications';
+import { ensureNotificationPermission, scheduleReminder } from '../services/notifications';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { fetchBookingInfo } from '../services/api';
@@ -33,15 +30,8 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export default function SettingsScreen() {
   const navigation = useNavigation<Nav>();
-  const {
-    settings,
-    updateSettings,
-    establishments,
-    loadDemoData,
-    appointments,
-    syncNow,
-    syncing,
-  } = useStore();
+  const { settings, updateSettings, establishments, loadDemoData, appointments, syncNow, syncing } =
+    useStore();
   const [doctorName, setDoctorName] = useState(settings.doctorName);
   const [serverUrl, setServerUrl] = useState(settings.serverUrl ?? '');
   const [doctorApiKey, setDoctorApiKey] = useState(settings.doctorApiKey ?? '');
@@ -51,7 +41,8 @@ export default function SettingsScreen() {
 
   const serverBase = settings.serverUrl?.trim() ?? '';
   const doctorSlug = settings.doctorSlug;
-  const bookingUrlResolved = serverBase && doctorSlug ? `${serverBase.replace(/\/+$/, '')}/b/${doctorSlug}` : null;
+  const bookingUrlResolved =
+    serverBase && doctorSlug ? `${serverBase.replace(/\/+$/, '')}/b/${doctorSlug}` : null;
 
   useEffect(() => {
     let cancelled = false;
@@ -78,7 +69,7 @@ export default function SettingsScreen() {
   }, [serverBase, doctorSlug, settings.doctorApiKey, bookingUrlResolved]);
 
   useEffect(() => {
-    Notifications.getPermissionsAsync().then((p) => setNotifGranted(p.granted));
+    Notifications.getPermissionsAsync().then(p => setNotifGranted(p.granted));
   }, []);
 
   async function onTestNotification() {
@@ -87,7 +78,7 @@ export default function SettingsScreen() {
     if (!granted) {
       Alert.alert(
         'Permission requise',
-        "Autorisez les notifications dans les réglages du téléphone pour recevoir les rappels.",
+        'Autorisez les notifications dans les réglages du téléphone pour recevoir les rappels.'
       );
       return;
     }
@@ -102,9 +93,9 @@ export default function SettingsScreen() {
         status: 'confirmed',
         createdAt: new Date().toISOString(),
       },
-      settings,
+      settings
     );
-    Alert.alert('Notification envoyée', 'Un rappel de test vient d\'être programmé.');
+    Alert.alert('Notification envoyée', "Un rappel de test vient d'être programmé.");
   }
 
   return (
@@ -124,15 +115,13 @@ export default function SettingsScreen() {
             onEndEditing={() => updateSettings({ doctorName: doctorName.trim() })}
             returnKeyType="done"
           />
-          <Text style={styles.hint}>
-            Utilisé dans les messages de rappel envoyés aux patients.
-          </Text>
+          <Text style={styles.hint}>Utilisé dans les messages de rappel envoyés aux patients.</Text>
         </View>
 
         <Text style={styles.section}>Établissement par défaut</Text>
         <View style={styles.card}>
           <View style={styles.wrap}>
-            {establishments.map((est) => (
+            {establishments.map(est => (
               <Chip
                 key={est.id}
                 label={est.name}
@@ -149,7 +138,7 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <Text style={styles.label}>Prévenir le patient avant le rendez-vous</Text>
           <View style={styles.wrap}>
-            {LEADS.map((lead) => (
+            {LEADS.map(lead => (
               <Chip
                 key={lead}
                 label={lead >= 60 ? `${lead / 60} h` : `${lead} min`}
@@ -175,7 +164,12 @@ export default function SettingsScreen() {
             </Text>
           </View>
 
-          <Pressable style={styles.testBtn} onPress={onTestNotification} accessibilityLabel="Tester la notification" accessibilityRole="button">
+          <Pressable
+            style={styles.testBtn}
+            onPress={onTestNotification}
+            accessibilityLabel="Tester la notification"
+            accessibilityRole="button"
+          >
             <Ionicons name="notifications-outline" size={17} color={colors.white} />
             <Text style={styles.testText}>Tester la notification</Text>
           </Pressable>
@@ -185,8 +179,8 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <Text style={styles.label}>Disponibilités du médecin</Text>
           <Text style={styles.hint}>
-            Les créneaux proposés aux patients (et dans votre agenda) sont calculés à partir
-            de ces plages. Stockage local avec miroir serveur lors de la synchronisation.
+            Les créneaux proposés aux patients (et dans votre agenda) sont calculés à partir de ces
+            plages. Stockage local avec miroir serveur lors de la synchronisation.
           </Text>
           <Pressable
             style={styles.testBtn}
@@ -239,8 +233,8 @@ export default function SettingsScreen() {
           ) : (
             <>
               <Text style={styles.hint}>
-                Configurez l&apos;URL du serveur et la clé API pour obtenir le lien de
-                réservation patient : {serverBase && doctorSlug ? `${serverBase}/b/${doctorSlug}` : '—'}.
+                Configurez l&apos;URL du serveur et la clé API pour obtenir le lien de réservation
+                patient : {serverBase && doctorSlug ? `${serverBase}/b/${doctorSlug}` : '—'}.
               </Text>
             </>
           )}
@@ -313,7 +307,7 @@ export default function SettingsScreen() {
             style={styles.demoBtn}
             onPress={() => {
               loadDemoData();
-              Alert.alert('Chargé', 'Rendez-vous de démonstration ajoutés à l\'agenda.');
+              Alert.alert('Chargé', "Rendez-vous de démonstration ajoutés à l'agenda.");
             }}
             accessibilityLabel="Charger des rendez-vous de démonstration"
             accessibilityRole="button"
@@ -393,9 +387,23 @@ const styles = StyleSheet.create({
   },
   demoText: { color: colors.accent, fontWeight: '700', fontSize: 13.5 },
   linkRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  linkValue: { fontSize: 13, color: colors.text, backgroundColor: colors.bg, borderRadius: radius.sm, padding: 10 },
+  linkValue: {
+    fontSize: 13,
+    color: colors.text,
+    backgroundColor: colors.bg,
+    borderRadius: radius.sm,
+    padding: 10,
+  },
   linkActions: { flexDirection: 'row', gap: 8 },
-  linkBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: 10, paddingHorizontal: 14 },
+  linkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
   linkBtnSecondary: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   linkBtnText: { color: colors.white, fontSize: 13, fontWeight: '700' },
   linkBtnTextSecondary: { color: colors.primary },

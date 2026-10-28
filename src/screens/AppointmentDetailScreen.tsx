@@ -1,7 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useMemo, useState } from 'react';
 
 import {
@@ -22,24 +30,22 @@ type R = RouteProp<RootStackParamList, 'AppointmentDetail'>;
 export default function AppointmentDetailScreen() {
   const navigation = useNavigation<Nav>();
   const { params } = useRoute<R>();
-  const {
-    appointments,
-    establishments,
-    settings,
-    updateAppointment,
-    removeAppointment,
-  } = useStore();
+  const { appointments, establishments, settings, updateAppointment, removeAppointment } =
+    useStore();
 
   const [loading, setLoading] = useState(false);
-  const appt = appointments.find((a) => a.id === params.id);
+  const appt = appointments.find(a => a.id === params.id);
 
   const seriesId = appt?.seriesId;
   const seriesUpcoming = useMemo(
     () =>
       appointments.filter(
-        (a) => a.seriesId === seriesId && a.date > (appt?.date ?? '') && (a.status ?? 'confirmed') !== 'canceled',
+        a =>
+          a.seriesId === seriesId &&
+          a.date > (appt?.date ?? '') &&
+          (a.status ?? 'confirmed') !== 'canceled'
       ),
-    [appointments, seriesId, appt?.date],
+    [appointments, seriesId, appt?.date]
   );
 
   if (!appt) {
@@ -50,7 +56,7 @@ export default function AppointmentDetailScreen() {
     );
   }
 
-  const est = establishments.find((e) => e.id === appt.establishmentId);
+  const est = establishments.find(e => e.id === appt.establishmentId);
   const meta = statusMeta(appt.status);
   const message = buildReminderMessage(appt, est, settings);
 
@@ -77,12 +83,12 @@ export default function AppointmentDetailScreen() {
       updateAppointment(appt!.id, { reminderId: id });
       Alert.alert(
         'Rappel programmé',
-        `Vous serez notifié(e) ${settings.reminderLeadMin} min avant le rendez-vous.`,
+        `Vous serez notifié(e) ${settings.reminderLeadMin} min avant le rendez-vous.`
       );
     } else {
       Alert.alert(
         'Rappel impossible',
-        'Permission de notification refusée ou rendez-vous déjà passé.',
+        'Permission de notification refusée ou rendez-vous déjà passé.'
       );
     }
   }
@@ -216,7 +222,10 @@ export default function AppointmentDetailScreen() {
                   for (const a of seriesUpcoming) {
                     updateAppointment(a.id, { status: 'canceled' });
                   }
-                  Alert.alert('Série annulée', `${seriesUpcoming.length} prochain(s) rendez-vous(s) annulé(s).`);
+                  Alert.alert(
+                    'Série annulée',
+                    `${seriesUpcoming.length} prochain(s) rendez-vous(s) annulé(s).`
+                  );
                 } finally {
                   setLoading(false);
                 }
@@ -233,12 +242,7 @@ export default function AppointmentDetailScreen() {
             color={colors.primary}
             onPress={onWhatsApp}
           />
-          <ActionBtn
-            icon="chatbubble-ellipses"
-            label="SMS"
-            color={colors.accent}
-            onPress={onSMS}
-          />
+          <ActionBtn icon="chatbubble-ellipses" label="SMS" color={colors.accent} onPress={onSMS} />
           <ActionBtn
             icon={appt.reminderId ? 'notifications' : 'notifications-outline'}
             label={appt.reminderId ? 'Retirer' : 'Rappel push'}
@@ -247,7 +251,12 @@ export default function AppointmentDetailScreen() {
           />
         </View>
 
-        <Pressable style={styles.deleteBtn} onPress={onDelete} accessibilityLabel="Supprimer le rendez-vous" accessibilityRole="button">
+        <Pressable
+          style={styles.deleteBtn}
+          onPress={onDelete}
+          accessibilityLabel="Supprimer le rendez-vous"
+          accessibilityRole="button"
+        >
           <Ionicons name="trash-outline" size={16} color={colors.danger} />
           <Text style={styles.deleteText}>Supprimer le rendez-vous</Text>
         </Pressable>
@@ -334,7 +343,12 @@ const styles = StyleSheet.create({
   badge: { borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 5 },
   badgeText: { fontSize: 11.5, fontWeight: '700' },
   detailRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
-  detailLabel: { fontSize: 11, color: colors.textFaint, fontWeight: '700', textTransform: 'uppercase' },
+  detailLabel: {
+    fontSize: 11,
+    color: colors.textFaint,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
   detailValue: { fontSize: 14.5, color: colors.text, marginTop: 1 },
   actionsRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
   action: {

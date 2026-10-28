@@ -23,7 +23,7 @@ export async function ensureNotificationPermission(): Promise<boolean> {
 /** Programme un rappel push local avant le rendez-vous. */
 export async function scheduleReminder(
   appointment: Appointment,
-  settings: Settings,
+  settings: Settings
 ): Promise<string | undefined> {
   const granted = await ensureNotificationPermission();
   if (!granted) return undefined;
@@ -63,7 +63,7 @@ export async function cancelReminder(reminderId?: string): Promise<void> {
 export function buildReminderMessage(
   appointment: Appointment,
   establishment?: Establishment,
-  settings?: Settings,
+  settings?: Settings
 ): string {
   const doctor = settings?.doctorName?.trim() || 'Votre médecin';
   const lieu = establishment ? ` à ${establishment.name}` : '';
@@ -79,10 +79,7 @@ function phoneDigits(phone: string): string {
 }
 
 /** Ouvre WhatsApp avec un message de rappel pré-rempli. */
-export async function sendWhatsApp(
-  phone: string,
-  message: string,
-): Promise<boolean> {
+export async function sendWhatsApp(phone: string, message: string): Promise<boolean> {
   const num = phoneDigits(phone);
   const url = `whatsapp://send?phone=${num}&text=${encodeURIComponent(message)}`;
   const webUrl = `https://wa.me/${num}?text=${encodeURIComponent(message)}`;
