@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
   buildReminderMessage,
@@ -32,6 +32,15 @@ export default function AppointmentDetailScreen() {
 
   const [loading, setLoading] = useState(false);
   const appt = appointments.find((a) => a.id === params.id);
+
+  const seriesId = appt?.seriesId;
+  const seriesUpcoming = useMemo(
+    () =>
+      appointments.filter(
+        (a) => a.seriesId === seriesId && a.date > (appt?.date ?? '') && (a.status ?? 'confirmed') !== 'canceled',
+      ),
+    [appointments, seriesId, appt?.date],
+  );
 
   if (!appt) {
     return (
@@ -132,6 +141,13 @@ export default function AppointmentDetailScreen() {
             </View>
           </View>
 
+          {!!seriesId && (
+            <View style={styles.seriesRow}>
+              <Ionicons name="repeat-outline" size={14} color={colors.primary} />
+              <Text style={styles.seriesText}>Série de rendez-vous</Text>
+            </View>
+          )}
+
           {!!appt.patientPhone && (
             <DetailRow icon="call-outline" label="Téléphone" value={appt.patientPhone} />
           )}
@@ -184,6 +200,27 @@ export default function AppointmentDetailScreen() {
               label="Annuler"
               color={colors.danger}
               onPress={() => setStatus('canceled')}
+            />
+          </View>
+        )}
+
+        {!!seriesId && seriesUpcoming.length > 0 && (
+          <View style={styles.actionsRow}>
+            <ActionBtn
+              icon="close-circle"
+              label="Annuler la série"
+              color={colors.danger}
+              onPress={async () => {
+                setLoading(true);
+                try {
+                  for (const a of seriesUpcoming) {
+                    updateAppointment(a.id, { status: 'canceled' });
+                  }
+                  Alert.alert('Série annulée', `${seriesUpcoming.length} prochain(s) rendez-vous(s) annulé(s).`);
+                } finally {
+                  setLoading(false);
+                }
+              }}
             />
           </View>
         )}
@@ -317,6 +354,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   actionLabel: { fontSize: 12, fontWeight: '700', color: colors.text },
+  seriesRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  seriesText: { fontSize: 12.5, fontWeight: '700', color: colors.primary },
   section: {
     fontSize: 13,
     fontWeight: '800',

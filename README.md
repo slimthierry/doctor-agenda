@@ -13,6 +13,20 @@ Application mobile d'**agenda médecin multi-établissements** avec rappels
 
 ## Fonctionnalités
 
+- **Anti-chevauchement** : le moteur de créneaux de l'app reproduit les règles
+  du backend (`free_slots` / `overlaps`) — un RDV de durée X désactive les
+  créneaux chevauchants, y compris ceux réservés par un patient en ligne
+- **Disponibilités** : écran « Mes horaires » (7 jours, plages horaires) → créneaux
+  pilotés localement puis miroir serveur (`PUT` / `GET /api/availability`)
+- **Rendez-vous récurrents** : hebdo / bimensuel / mensuel × N occurrences,
+  conflits d'occurrence ignorés avec alerte, annulation des prochains de la série
+- **Patients** : agrégation dérivée par téléphone (historique, visites, dernières
+  consultations), autocomplete dans le formulaire, onglet « Patients »
+- **Réservation patient** : lien `{serverUrl}/b/{slug}` (ex. `/b/dr-kpatcha`)
+  servie par le backend (page HTML autonome), affichée / copiée / partagée dans
+  les Réglages, boutons **Copier** / **Partager**
+- **Rappels serveur** : envoi automatique (SMS/WhatsApp via Twilio, sinon log) avec
+  `REMINDER_LEAD_MIN` (défaut 60 min) et reset si le RDV est décalé
 - **Agenda journalier** : bandeau de jours, navigation jour précédent/suivant,
   stats du jour (total / confirmés / à confirmer)
 - **Multi-établissements** : création de lieux d'exercice avec couleur,
@@ -24,6 +38,7 @@ Application mobile d'**agenda médecin multi-établissements** avec rappels
   - WhatsApp : ouverture de `wa.me` avec message pré-rempli
   - SMS : ouverture de l'app SMS avec message pré-rempli
   - Push local programmable (15 min / 30 min / 1 h / 2 h avant le RDV)
+  - Rappel serveur (backend) : envoi unique, renouvellement si le RDV bouge
 - **Réglages** : nom du médecin (utilisé dans les messages), établissement
   par défaut, délai de rappel, test de notification, données de démonstration
 - **Synchro agenda central** (local-first) :
@@ -80,6 +95,4 @@ doctor-agenda/
 ## Évolutions prévues
 
 - Sync automatique (arrière-plan) + synchro des établissements
-- Rappels distants (SMS/WhatsApp automatiques via l'API serveur)
-- Vue semaine, récurrence des rendez-vous
-- Lien de réservation patient (endpoints `/booking` déjà disponibles)
+- No-show, stats/KPI, onboarding, plans d'abonnement (P2/P3)
