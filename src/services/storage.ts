@@ -1,11 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { Appointment, Establishment, Settings } from '../types';
+import { Appointment, AvailabilityRule, Establishment, Settings } from '../types';
 
 const KEY = {
   appointments: '@doctor-agenda/appointments',
   establishments: '@doctor-agenda/establishments',
   settings: '@doctor-agenda/settings',
+  availability: '@doctor-agenda/availability',
 } as const;
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -54,4 +55,12 @@ export function loadSettings(): Promise<Settings> {
 
 export function saveSettings(s: Settings): Promise<void> {
   return write(KEY.settings, s);
+}
+
+export function loadAvailability(): Promise<AvailabilityRule[]> {
+  return read<AvailabilityRule[]>(KEY.availability, []);
+}
+
+export function saveAvailability(rules: AvailabilityRule[]): Promise<void> {
+  return write(KEY.availability, rules);
 }

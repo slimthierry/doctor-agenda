@@ -145,6 +145,13 @@ export default function AppointmentDetailScreen() {
           {!!appt.reason && (
             <DetailRow icon="document-text-outline" label="Motif" value={appt.reason} />
           )}
+          {!!appt.reminderSentAt && (
+            <DetailRow
+              icon="notifications-outline"
+              label="Rappel serveur"
+              value={`Envoyé le ${new Date(appt.reminderSentAt).toLocaleString('fr-FR')}`}
+            />
+          )}
           <DetailRow
             icon="notifications-outline"
             label="Rappel push"

@@ -99,3 +99,13 @@ export function timeSlots(
 export function formatDuration(min: number): string {
   return `${min} min`;
 }
+
+/** Ajoute N mois à une date ISO avec clamp au dernier jour du mois cible. */
+export function addMonths(iso: string, months: number): string {
+  const d = fromISO(iso);
+  const day = d.getDate();
+  const target = new Date(d.getFullYear(), d.getMonth() + months, 1);
+  const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+  target.setDate(Math.min(day, lastDay));
+  return toISO(target);
+}

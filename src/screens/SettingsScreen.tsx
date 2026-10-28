@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import {
   Alert,
   ActivityIndicator,
+  Clipboard,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -18,13 +20,19 @@ import {
   ensureNotificationPermission,
   scheduleReminder,
 } from '../services/notifications';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { fetchBookingInfo } from '../services/api';
 import { useStore } from '../store/StoreContext';
 import { colors, radius, shadow } from '../theme';
+import { RootStackParamList } from '../types';
 import { addDays, todayISO } from '../utils/date';
 
 const LEADS = [15, 30, 60, 120];
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export default function SettingsScreen() {
+  const navigation = useNavigation<Nav>();
   const {
     settings,
     updateSettings,
@@ -38,6 +46,36 @@ export default function SettingsScreen() {
   const [serverUrl, setServerUrl] = useState(settings.serverUrl ?? '');
   const [doctorApiKey, setDoctorApiKey] = useState(settings.doctorApiKey ?? '');
   const [notifGranted, setNotifGranted] = useState<boolean | null>(null);
+  const [bookingUrl, setBookingUrl] = useState<string | null>(null);
+  const [loadingLink, setLoadingLink] = useState(false);
+
+  const serverBase = settings.serverUrl?.trim() ?? '';
+  const doctorSlug = settings.doctorSlug;
+  const bookingUrlResolved = serverBase && doctorSlug ? `${serverBase.replace(/\/+$/, '')}/b/${doctorSlug}` : null;
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      if (!serverBase || !doctorSlug) {
+        setBookingUrl(null);
+        return;
+      }
+      setLoadingLink(true);
+      try {
+        const info = await fetchBookingInfo(serverBase, settings.doctorApiKey ?? '', doctorSlug);
+        const url = `${serverBase.replace(/\/+$/, '')}/b/${info.doctor.slug}`;
+        if (!cancelled) setBookingUrl(url);
+      } catch {
+        if (!cancelled) setBookingUrl(bookingUrlResolved);
+      } finally {
+        if (!cancelled) setLoadingLink(false);
+      }
+    }
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [serverBase, doctorSlug, settings.doctorApiKey, bookingUrlResolved]);
 
   useEffect(() => {
     Notifications.getPermissionsAsync().then((p) => setNotifGranted(p.granted));
@@ -141,6 +179,71 @@ export default function SettingsScreen() {
             <Ionicons name="notifications-outline" size={17} color={colors.white} />
             <Text style={styles.testText}>Tester la notification</Text>
           </Pressable>
+        </View>
+
+        <Text style={styles.section}>Mes horaires</Text>
+        <View style={styles.card}>
+          <Text style={styles.label}>Disponibilités du médecin</Text>
+          <Text style={styles.hint}>
+            Les créneaux proposés aux patients (et dans votre agenda) sont calculés à partir
+            de ces plages. Stockage local avec miroir serveur lors de la synchronisation.
+          </Text>
+          <Pressable
+            style={styles.testBtn}
+            onPress={() => navigation.navigate('Availability')}
+            accessibilityLabel="Éditer mes horaires"
+            accessibilityRole="button"
+          >
+            <Ionicons name="time-outline" size={17} color={colors.white} />
+            <Text style={styles.testText}>Éditer mes horaires</Text>
+          </Pressable>
+        </View>
+
+        <Text style={styles.section}>Réservation en ligne</Text>
+        <View style={styles.card}>
+          {loadingLink ? (
+            <View style={styles.linkRow}>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={styles.hint}>Chargement du lien…</Text>
+            </View>
+          ) : bookingUrl ? (
+            <>
+              <Text style={styles.label}>Lien de réservation patient</Text>
+              <Text style={styles.linkValue}>{bookingUrl}</Text>
+              <View style={styles.linkActions}>
+                <Pressable
+                  style={styles.linkBtn}
+                  onPress={() => {
+                    Clipboard.setString(bookingUrl);
+                    Alert.alert('Lien copié', bookingUrl);
+                  }}
+                  accessibilityLabel="Copier le lien de réservation"
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="copy-outline" size={16} color={colors.white} />
+                  <Text style={styles.linkBtnText}>Copier</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.linkBtn, styles.linkBtnSecondary]}
+                  onPress={() => {
+                    void Share.share({ url: bookingUrl, title: 'Prenez rendez-vous' });
+                  }}
+                  accessibilityLabel="Partager le lien de réservation"
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="share-outline" size={16} color={colors.primary} />
+                  <Text style={[styles.linkBtnText, styles.linkBtnTextSecondary]}>Partager</Text>
+                </Pressable>
+              </View>
+            </>
+          ) : (
+            <>
+              <Text style={styles.hint}>
+                Configurez l&apos;URL du serveur et la clé API pour obtenir le lien de
+                réservation patient : {serverBase && doctorSlug ? `${serverBase}/b/${doctorSlug}` : '—'}.
+              </Text>
+            </>
+          )}
         </View>
 
         <Text style={styles.section}>Agenda central (synchro)</Text>
@@ -289,6 +392,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   demoText: { color: colors.accent, fontWeight: '700', fontSize: 13.5 },
+  linkRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  linkValue: { fontSize: 13, color: colors.text, backgroundColor: colors.bg, borderRadius: radius.sm, padding: 10 },
+  linkActions: { flexDirection: 'row', gap: 8 },
+  linkBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: 10, paddingHorizontal: 14 },
+  linkBtnSecondary: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
+  linkBtnText: { color: colors.white, fontSize: 13, fontWeight: '700' },
+  linkBtnTextSecondary: { color: colors.primary },
   about: {
     textAlign: 'center',
     color: colors.textFaint,

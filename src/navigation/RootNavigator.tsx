@@ -5,7 +5,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { Platform, View, ActivityIndicator } from 'react-native';
 
 import AppointmentDetailScreen from '../screens/AppointmentDetailScreen';
+import AvailabilityScreen from '../screens/AvailabilityScreen';
+import PatientDetailScreen from '../screens/PatientDetailScreen';
 import AgendaScreen from '../screens/AgendaScreen';
+import PatientsScreen from '../screens/PatientsScreen';
 import EstablishmentsScreen from '../screens/EstablishmentsScreen';
 import NewAppointmentScreen from '../screens/NewAppointmentScreen';
 import SettingsScreen from '../screens/SettingsScreen';
@@ -47,6 +50,7 @@ function Tabs() {
           const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
             Agenda: 'calendar',
             Establishments: 'business',
+            Patients: 'people',
             Settings: 'settings',
           };
           return <Ionicons name={icons[route.name]} size={size} color={color} />;
@@ -54,6 +58,11 @@ function Tabs() {
       })}
     >
       <Tab.Screen name="Agenda" component={AgendaScreen} />
+      <Tab.Screen
+        name="Patients"
+        component={PatientsScreen}
+        options={{ title: 'Patients' }}
+      />
       <Tab.Screen
         name="Establishments"
         component={EstablishmentsScreen}
@@ -99,6 +108,16 @@ export default function RootNavigator() {
           name="AppointmentDetail"
           component={AppointmentDetailScreen}
           options={{ title: 'Rendez-vous' }}
+        />
+        <Stack.Screen
+          name="Availability"
+          component={AvailabilityScreen}
+          options={{ title: 'Mes horaires' }}
+        />
+        <Stack.Screen
+          name="PatientDetail"
+          component={PatientDetailScreen}
+          options={{ title: 'Patient' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

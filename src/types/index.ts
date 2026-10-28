@@ -7,6 +7,14 @@ export interface Establishment {
   color: string;
 }
 
+export interface AvailabilityRule {
+  id: string;
+  establishmentId?: string;
+  weekday: number; // 0 = dimanche … 6 = samedi (même convention backend)
+  start: string; // HH:mm
+  end: string; // HH:mm
+}
+
 export interface Appointment {
   id: string;
   patientName: string;
@@ -19,6 +27,10 @@ export interface Appointment {
   durationMin: number;
   reason?: string;
   status: AppointmentStatus;
+  /** Identifiant de série pour les RDV récurrents */
+  seriesId?: string;
+  /** Rappel serveur déjà envoyé (RFC-3339) — remis à null si le RDV bouge */
+  reminderSentAt?: string;
   reminderId?: string;
   createdAt: string;
   /** Dernière modification (synchro last-write-wins) */
@@ -34,8 +46,20 @@ export interface Settings {
   serverUrl?: string;
   /** Clé API médecin (header X-Api-Key) */
   doctorApiKey?: string;
+  /** Slug public du médecin (pour le lien /b/{slug}) */
+  doctorSlug?: string;
+  /** Dernière mise à jour des disponibilités (ISO) */
+  availabilityUpdatedAt?: string;
   /** Dernière synchro réussie (ISO) */
   lastSyncAt?: string;
+}
+
+export interface PatientSummary {
+  id: string;
+  name: string;
+  phone: string;
+  visits: number;
+  lastDate: string;
 }
 
 export interface SyncResult {
@@ -49,10 +73,13 @@ export type RootStackParamList = {
   Tabs: undefined;
   NewAppointment: { date?: string } | undefined;
   AppointmentDetail: { id: string };
+  Availability: undefined;
+  PatientDetail: { id: string };
 };
 
 export type TabParamList = {
   Agenda: undefined;
   Establishments: undefined;
+  Patients: undefined;
   Settings: undefined;
 };

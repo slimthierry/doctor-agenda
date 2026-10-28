@@ -8,22 +8,27 @@ import React, {
 } from 'react';
 
 import {
+  fetchAvailability,
+  fetchMe,
   fromServer,
   isServerConfigured,
   pullAppointments,
   pushAppointments,
+  putAvailability,
   toServer,
 } from '../services/api';
 import {
   loadAppointments,
+  loadAvailability,
   loadEstablishments,
   loadSettings,
   saveAppointments,
+  saveAvailability as persistAvailability,
   saveEstablishments,
   saveSettings,
   DEFAULT_SETTINGS,
 } from '../services/storage';
-import { Appointment, Establishment, Settings, SyncResult } from '../types';
+import { Appointment, AvailabilityRule, Establishment, PatientSummary, Settings, SyncResult } from '../types';
 import { addDays, todayISO } from '../utils/date';
 import { colors, palette } from '../theme';
 
@@ -33,6 +38,8 @@ interface StoreValue {
   establishments: Establishment[];
   settings: Settings;
   syncing: boolean;
+  availability: AvailabilityRule[];
+  saveAvailability: (rules: AvailabilityRule[]) => Promise<void>;
   addAppointment: (data: Omit<Appointment, 'id' | 'createdAt' | 'status' | 'updatedAt'>) => Appointment;
   updateAppointment: (id: string, patch: Partial<Appointment>) => void;
   removeAppointment: (id: string) => void;
@@ -42,6 +49,7 @@ interface StoreValue {
   loadDemoData: () => void;
   syncNow: () => Promise<SyncResult>;
   appointmentsOn: (date: string, establishmentId?: string) => Appointment[];
+  patients: PatientSummary[];
 }
 
 const StoreContext = createContext<StoreValue | null>(null);
@@ -62,19 +70,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [establishments, setEstablishments] = useState<Establishment[]>([]);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [syncing, setSyncing] = useState(false);
+  const [availability, setAvailability] = useState<AvailabilityRule[]>([]);
 
   useEffect(() => {
     (async () => {
-      const [a, e, s] = await Promise.all([
+      const [a, e, s, av] = await Promise.all([
         loadAppointments(),
         loadEstablishments(),
         loadSettings(),
+        loadAvailability(),
       ]);
       // Rétrocompat : les anciens RDV n'ont pas updatedAt
       setAppointments(a.map((x) => ({ ...x, updatedAt: x.updatedAt ?? x.createdAt })));
       setEstablishments(e.length ? e : SEED_ESTABLISHMENTS);
       if (!e.length) await saveEstablishments(SEED_ESTABLISHMENTS);
       setSettings(s);
+      setAvailability(av);
       setReady(true);
     })();
   }, []);
@@ -88,6 +99,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setEstablishments(list);
     void saveEstablishments(list);
   }, []);
+
+  const saveAvailability = useCallback<StoreValue['saveAvailability']>(async (rules) => {
+    setAvailability(rules);
+    void persistAvailability(rules);
+    if (isServerConfigured(settings)) {
+      try {
+        await putAvailability(settings.serverUrl!.trim(), settings.doctorApiKey!.trim(), rules);
+      } catch {
+        // local-first : l'echec serveur ne doit pas perdre les regles locales
+      }
+    }
+  }, [settings]);
 
   const addAppointment = useCallback<StoreValue['addAppointment']>(
     (data) => {
@@ -237,6 +260,28 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         settings.lastSyncAt ?? '1970-01-01T00:00:00.000Z',
       );
 
+      // 2b. Tirer les disponibilités serveur (miroir du local-first)
+      let serverRules: AvailabilityRule[] | null = null;
+      try {
+        serverRules = await fetchAvailability(base, key);
+      } catch {
+        serverRules = null;
+      }
+      if (serverRules) {
+        setAvailability(serverRules);
+        void persistAvailability(serverRules);
+      }
+
+      // 2c. Memoriser le slug public du médecin (lien /b/{slug} de reservation patient)
+      try {
+        const me = await fetchMe(base, key);
+        const nextSettings = { ...settings, doctorSlug: me.doctor.slug };
+        setSettings(nextSettings);
+        void saveSettings(nextSettings);
+      } catch {
+        // non bloquant : le lien reste utilisable avec le slug saisi dans les reglages
+      }
+
       // 3. Fusion last-write-wins sur updatedAt
       const map = new Map<string, Appointment>(local.map((a) => [a.id, a]));
       for (const s of pullRes.appointments) {
@@ -293,6 +338,31 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [appointments],
   );
 
+  const patients = useMemo<PatientSummary[]>(() => {
+    const map = new Map<string, PatientSummary>();
+    for (const a of appointments) {
+      const phone = (a.patientPhone ?? '').trim();
+      const key = phone || a.patientName.trim();
+      const existing = map.get(key);
+      if (existing) {
+        existing.visits += 1;
+        if (a.date > existing.lastDate) {
+          existing.lastDate = a.date;
+          existing.name = a.patientName;
+        }
+      } else {
+        map.set(key, {
+          id: key,
+          name: a.patientName,
+          phone,
+          visits: 1,
+          lastDate: a.date,
+        });
+      }
+    }
+    return [...map.values()].sort((x, y) => y.lastDate.localeCompare(x.lastDate));
+  }, [appointments]);
+
   const value = useMemo<StoreValue>(
     () => ({
       ready,
@@ -300,6 +370,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       establishments,
       settings,
       syncing,
+      availability,
+      saveAvailability,
       addAppointment,
       updateAppointment,
       removeAppointment,
@@ -309,6 +381,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       loadDemoData,
       syncNow,
       appointmentsOn,
+      patients,
     }),
     [
       ready,
@@ -316,6 +389,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       establishments,
       settings,
       syncing,
+      availability,
+      saveAvailability,
       addAppointment,
       updateAppointment,
       removeAppointment,
@@ -325,6 +400,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       loadDemoData,
       syncNow,
       appointmentsOn,
+      patients,
     ],
   );
 
