@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Doctor Agenda",
+    "slug": "doctor-agenda",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "doctoragenda",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#179F4E",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "tg.liksoft.doctoragenda",
+      "infoPlist": {
+        "LSApplicationQueriesSchemes": ["whatsapp", "sms"]
+      }
+    },
+    "android": {
+      "package": "tg.liksoft.doctoragenda",
+    "permissions": ["POST_NOTIFICATIONS", "SCHEDULE_EXACT_ALARM"]
+    },
+    "plugins": [
+      "expo-notifications"
+    ]
+  }
+}

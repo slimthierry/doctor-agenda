@@ -1,0 +1,54 @@
+N°,Catégorie,Nom de l'application,Nom technique,Statut,État,Priorité,Version,Date installation,Dernière mise à jour,Concepteur,Notes
+1,Chirurgie,LIKMED - Anesthésiologie,likmed_anesthesiology,À activer,Inactif,Haute,-,-,-,-,Priorité pour bloc opératoire
+2,Médecine Interne,LIKMED - Cardiologie,likmed_cardiology,À activer,Inactif,Haute,-,-,-,-,Service avec forte activité
+3,Pédiatrie,LIKMED - Psychiatrie de l'Enfant,likmed_child_psychiatry,À activer,Inactif,Moyenne,-,-,-,-,
+4,Médecine Dentaire,Likmed Dentaire,likmed_dental,À activer,Inactif,Moyenne,-,-,-,-,
+5,Dermatologie,Likmed Dermatologie,likmed_dermatology,À activer,Inactif,Basse,-,-,-,-,
+6,Urgences,LIKMED - Service d'Urgences,likmed_emergency,À activer,Inactif,Haute,-,-,-,-,CRITIQUE - Priorité absolue
+7,Médecine Interne,LIKMED - Endocrinologie et Métabolisme,likmed_endocrinology,À activer,Inactif,Moyenne,-,-,-,-,
+8,Médecine Interne,Likmed Hépato-Gastro-Entérologie,likmed_gastroenterology,À activer,Inactif,Moyenne,-,-,-,-,
+9,Médecine Générale,Likmed Médecine Générale,likmed_general_medicine,À activer,Inactif,Haute,-,-,-,-,Service de base
+10,Chirurgie,LIKMED - Chirurgie Générale,likmed_general_surgery,À activer,Inactif,Haute,-,-,-,-,Priorité hôpital central
+11,Génétique,LIKMED - Génétique Médicale,likmed_genetics,À activer,Inactif,Basse,-,-,-,-,
+12,Gériatrie,LIKMED - Gériatrie,likmed_geriatrics,À activer,Inactif,Moyenne,-,-,-,-,
+13,Gynécologie,Likmed Gynécologie-Obstétrique,likmed_gynecology,À activer,Inactif,Haute,-,-,-,-,Service avec forte activité
+14,Médecine Interne,LIKMED - Hématologie,likmed_hematology,À activer,Inactif,Moyenne,-,-,-,-,
+15,Médecine Interne,Likmed Médecine Interne,likmed_internal_medicine,À activer,Inactif,Haute,-,-,-,-,
+16,Laboratoire,LIKMED Analyses Médicales,likmed_laboratory,À activer,Inactif,Haute,-,-,-,-,CRITIQUE - Service central
+17,Chirurgie,LIKMED - Chirurgie Maxillo-faciale,likmed_maxillofacial,À activer,Inactif,Moyenne,-,-,-,-,
+18,Chirurgie,LIKMED - Chirurgie Maxillo-faciale Stomatologie,likmed_maxillofacial_stomatology,À activer,Inactif,Moyenne,-,-,-,-,
+19,Gynécologie,LIKMED - Gynécologie Médicale,likmed_medical_gynecology,À activer,Inactif,Moyenne,-,-,-,-,
+20,Rééducation,Likmed Médecine Physique et Réadaptation,likmed_mpr,À activer,Inactif,Moyenne,-,-,-,-,
+21,Médecine Interne,LIKMED - Néphrologie,likmed_nephrology,À activer,Inactif,Moyenne,-,-,-,-,
+22,Neurologie,LIKMED - Neurologie,likmed_neurology,À activer,Inactif,Haute,-,-,-,-,
+23,Psychiatrie,LIKMED - Neuropsychiatrie,likmed_neuropsychiatry,À activer,Inactif,Moyenne,-,-,-,-,
+24,Neurologie,LIKMED - Neurochirurgie,likmed_neurosurgery,À activer,Inactif,Haute,-,-,-,-,
+25,Radiologie,LIKMED - Médecine Nucléaire,likmed_nuclear_medicine,À activer,Inactif,Basse,-,-,-,-,
+26,Nutrition,Likmed Nutrition,likmed_nutrition,Actif,Utilisé,Moyenne,2.1,15/06/2026,10/07/2026,LIKSOFT,Fonctionne bien - première app installée
+27,Oncologie,LIKMED - Oncologie,likmed_oncology,À activer,Inactif,Haute,-,-,-,-,Service avec forte activité
+28,Ophtalmologie,LIKMED - Ophtalmologie,likmed_ophthalmology,À activer,Inactif,Moyenne,-,-,-,-,
+29,ORL,Likmed ORL,likmed_orl,À activer,Inactif,Moyenne,-,-,-,-,
+30,Laboratoire,LIKMED - Anatomo-Cyto-Pathologie,likmed_pathology,À activer,Inactif,Haute,-,-,-,-,CRITIQUE - Diagnostic
+31,Pédiatrie,LIKMED - Pédiatrie,likmed_pediatrics,À activer,Inactif,Haute,-,-,-,-,Service pédiatrique principal
+32,Chirurgie,LIKMED - Chirurgie Infantile,likmed_pediatric_surgery,À activer,Inactif,Haute,-,-,-,-,
+33,Chirurgie,LIKMED - Chirurgie Plastique Reconstructrice,likmed_plastic_surgery,À activer,Inactif,Basse,-,-,-,-,
+34,Psychiatrie,LIKMED - Psychiatrie,likmed_psychiatry,À activer,Inactif,Moyenne,-,-,-,-,
+35,Psychologie,LIKMED - Psychologie,likmed_psychology,À activer,Inactif,Basse,-,-,-,-,
+36,Pneumologie,LIKMED - Pneumologie,likmed_pulmonology,À activer,Inactif,Moyenne,-,-,-,-,
+37,Oncologie,LIKMED - Oncologie Radiothérapique,likmed_radiation_oncology,À activer,Inactif,Haute,-,-,-,-,
+38,Radiologie,Likmed Radiologie,likmed_radiology,À activer,Inactif,Haute,-,-,-,-,CRITIQUE - Imagerie
+39,Radiothérapie,LIKMED - Radiothérapie,likmed_radiotherapy,À activer,Inactif,Moyenne,-,-,-,-,
+40,Rhumatologie,Likmed Rhumatologie,likmed_rheumatology,À activer,Inactif,Basse,-,-,-,-,
+41,Chirurgie,LIKMED - Chirurgie Thoracique et Cardio-vasculaire,likmed_thoracic_surgery,À activer,Inactif,Haute,-,-,-,-,
+42,Traumatologie,Likmed Traumatologie,likmed_trauma,À activer,Inactif,Haute,-,-,-,-,CRITIQUE - Urgences
+43,Urologie,LIKMED - Urologie,likmed_urology,À activer,Inactif,Moyenne,-,-,-,-,
+44,Chirurgie,LIKMED - Chirurgie Vasculaire,likmed_vascular_surgery,À activer,Inactif,Moyenne,-,-,-,-,
+45,Chirurgie,LIKMED - Chirurgie Viscérale,likmed_visceral_surgery,À activer,Inactif,Haute,-,-,-,-,
+,,,,Résumé,,,,
+,,,,Total applications,45,,,
+,,,,Actives,1,2%,,
+,,,,Installées,0,0%,,
+,,,,À activer,44,98%,,
+,,,,Priorité Haute,18,40%,,
+,,,,Priorité Moyenne,20,44%,,
+,,,,Priorité Basse,7,16%,,
