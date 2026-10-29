@@ -3,7 +3,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, shadow } from '../theme';
 import { Appointment } from '../types';
-import { statusMeta, useStore } from '../store/StoreContext';
+import { statusMeta } from '../domain';
+import { useStore } from '../store/StoreContext';
 import { formatDuration } from '../utils/date';
 
 interface Props {

@@ -9,6 +9,7 @@ import {
   ScrollView,
   Share,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -136,6 +137,20 @@ export default function SettingsScreen() {
 
         <Text style={styles.section}>Rappels push</Text>
         <View style={styles.card}>
+          <View style={styles.switchRow}>
+            <View style={styles.switchLeft}>
+              <Text style={styles.label}>Rappels automatiques</Text>
+              <Text style={styles.hint}>
+                Programme les rappels push des prochains rendez-vous confirmés.
+              </Text>
+            </View>
+            <Switch
+              value={settings.autoReminders !== false}
+              onValueChange={value => updateSettings({ autoReminders: value })}
+              accessibilityLabel="Rappels automatiques"
+            />
+          </View>
+
           <Text style={styles.label}>Prévenir le patient avant le rendez-vous</Text>
           <View style={styles.wrap}>
             {LEADS.map(lead => (
@@ -361,6 +376,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
   },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  switchLeft: { flex: 1, gap: 4 },
   permRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
   permText: { fontSize: 13, color: colors.text, fontWeight: '600' },
   syncInfoRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },

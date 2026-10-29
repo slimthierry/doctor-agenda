@@ -42,6 +42,8 @@ export interface Settings {
   defaultEstablishmentId?: string;
   /** Délai du rappel push avant le rendez-vous (minutes) */
   reminderLeadMin: number;
+  /** Rappels push programmés automatiquement pour les prochains RDV */
+  autoReminders: boolean;
   /** URL de l'agenda central (ex. http://localhost:4400) */
   serverUrl?: string;
   /** Clé API médecin (header X-Api-Key) */
@@ -62,6 +64,17 @@ export interface PatientSummary {
   lastDate: string;
 }
 
+export interface NewAppointmentInput {
+  patientName: string;
+  patientPhone?: string;
+  establishmentId: string;
+  date: string;
+  time: string;
+  durationMin: number;
+  reason?: string;
+  seriesId?: string;
+}
+
 export interface SyncResult {
   ok: boolean;
   pushed: number;
@@ -71,7 +84,7 @@ export interface SyncResult {
 
 export type RootStackParamList = {
   Tabs: undefined;
-  NewAppointment: { date?: string } | undefined;
+  NewAppointment: { date?: string; editId?: string } | undefined;
   AppointmentDetail: { id: string };
   Availability: undefined;
   PatientDetail: { id: string };

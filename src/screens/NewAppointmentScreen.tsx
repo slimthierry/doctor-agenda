@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -19,12 +19,18 @@ import {
 import Chip from '../components/Chip';
 import DayStrip from '../components/DayStrip';
 import Slot from '../components/Slot';
+import {
+  conflictsWith,
+  defaultRules,
+  freeSlots,
+  newSeriesId,
+  planSeries,
+  validateAppointmentDraft,
+} from '../domain';
 import { useStore } from '../store/StoreContext';
 import { colors, radius, shadow } from '../theme';
 import { RootStackParamList } from '../types';
-import { addDays, addMonths, fromISO, minutesOf, todayISO } from '../utils/date';
-import { defaultRules, freeSlots, overlaps } from '../utils/slots';
-import { validateAppointmentForm } from '../utils/validation';
+import { minutesOf, todayISO } from '../utils/date';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type R = RouteProp<RootStackParamList, 'NewAppointment'>;
@@ -34,20 +40,36 @@ const DURATIONS = [15, 20, 30, 45, 60];
 export default function NewAppointmentScreen() {
   const navigation = useNavigation<Nav>();
   const { params } = useRoute<R>();
-  const { establishments, appointments, settings, availability, patients, addAppointment } =
-    useStore();
+  const {
+    establishments,
+    appointments,
+    settings,
+    availability,
+    patients,
+    addAppointment,
+    updateAppointment,
+  } = useStore();
 
-  const [patientName, setPatientName] = useState('');
-  const [patientPhone, setPatientPhone] = useState('');
-  const [date, setDate] = useState(params?.date ?? todayISO());
-  const [time, setTime] = useState<string | null>(null);
-  const [durationMin, setDurationMin] = useState(30);
-  const [establishmentId, setEstablishmentId] = useState(
-    settings.defaultEstablishmentId ?? establishments[0]?.id ?? ''
+  const editing = useMemo(
+    () => (params?.editId ? appointments.find(a => a.id === params.editId) : undefined),
+    [appointments, params]
   );
-  const [reason, setReason] = useState('');
+
+  const [patientName, setPatientName] = useState(editing?.patientName ?? '');
+  const [patientPhone, setPatientPhone] = useState(editing?.patientPhone ?? '');
+  const [date, setDate] = useState(editing?.date ?? params?.date ?? todayISO());
+  const [time, setTime] = useState<string | null>(editing?.time ?? null);
+  const [durationMin, setDurationMin] = useState(editing?.durationMin ?? 30);
+  const [establishmentId, setEstablishmentId] = useState(
+    editing?.establishmentId ?? settings.defaultEstablishmentId ?? establishments[0]?.id ?? ''
+  );
+  const [reason, setReason] = useState(editing?.reason ?? '');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    navigation.setOptions({ title: editing ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous' });
+  }, [navigation, editing]);
 
   const knownPatients = useMemo(() => {
     const q = patientPhone.trim().toLowerCase();
@@ -60,13 +82,7 @@ export default function NewAppointmentScreen() {
   }, [patients, patientName, patientPhone]);
   const [recur, setRecur] = useState<'none' | 'weekly' | 'biweekly' | 'monthly'>('none');
   const [occurrences, setOccurrences] = useState(4);
-  const seriesId = useMemo(
-    () =>
-      recur === 'none'
-        ? undefined
-        : `ser-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-    [recur]
-  );
+  const seriesId = useMemo(() => (recur === 'none' ? undefined : newSeriesId()), [recur]);
 
   const rules = useMemo(
     () => (availability.length > 0 ? availability : defaultRules()),
@@ -74,8 +90,14 @@ export default function NewAppointmentScreen() {
   );
 
   const dayAppointments = useMemo(
-    () => appointments.filter(a => a.date === date && (a.status ?? 'confirmed') !== 'canceled'),
-    [appointments, date]
+    () =>
+      appointments.filter(
+        a =>
+          a.date === date &&
+          (!editing || a.id !== editing.id) &&
+          (a.status ?? 'confirmed') !== 'canceled'
+      ),
+    [appointments, date, editing]
   );
 
   const slots = useMemo(() => {
@@ -97,58 +119,64 @@ export default function NewAppointmentScreen() {
   }, [rules, dayAppointments, date, durationMin, establishmentId]);
 
   async function onSave() {
-    const error = validateAppointmentForm({
-      patientName,
-      patientPhone,
-      date,
-      time,
-      establishmentId,
-    });
-
-    if (error) {
-      setError(error.message);
+    const now = new Date();
+    const issues = validateAppointmentDraft(
+      { patientName, patientPhone, date, time, durationMin, establishmentId },
+      { nowDate: todayISO(), nowMinutes: now.getHours() * 60 + now.getMinutes() }
+    );
+    if (issues.length > 0) {
+      setError(issues.map(i => i.message).join('\n'));
       return;
     }
 
-    if (time) {
-      const clash = dayAppointments.some(a =>
-        overlaps(minutesOf(time), durationMin, minutesOf(a.time), a.durationMin)
-      );
-      if (clash) {
-        setError("Ce créneau vient d'être pris, choisissez-en un autre.");
+    if (editing) {
+      if (conflictsWith(appointments, { date, time: time!, durationMin }, editing.id)) {
+        setError('Un autre rendez-vous occupe déjà ce nouveau créneau.');
         return;
       }
-    }
-
-    const seriesDates: string[] = [];
-    if (recur === 'weekly' || recur === 'biweekly') {
-      const step = recur === 'weekly' ? 7 : 14;
-      for (let k = 0; k < occurrences; k++) seriesDates.push(addDays(date, k * step));
-    } else if (recur === 'monthly') {
-      for (let k = 0; k < occurrences; k++) seriesDates.push(addMonths(date, k));
-    } else if (recur === 'none') {
-      seriesDates.push(date);
-    }
-
-    const createdDates: string[] = [];
-    const skipped: string[] = [];
-    for (const d of seriesDates) {
-      const ok = !dayAppointments.some(
-        a =>
-          a.date === d &&
-          overlaps(minutesOf(time ?? '00:00'), durationMin, minutesOf(a.time), a.durationMin)
-      );
-      if (ok) {
-        createdDates.push(d);
-      } else {
-        skipped.push(d);
+      setSaving(true);
+      try {
+        updateAppointment(editing.id, {
+          patientName: patientName.trim(),
+          patientPhone: patientPhone.trim() || undefined,
+          establishmentId,
+          date,
+          time: time!,
+          durationMin,
+          reason: reason.trim() || undefined,
+        });
+        Alert.alert('Modifications enregistrées', `${patientName.trim()} — ${date} à ${time}`, [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
+      } catch (e) {
+        const message = e instanceof Error ? e.message : 'Erreur lors de la modification';
+        setError(message);
+      } finally {
+        setSaving(false);
       }
+      return;
+    }
+
+    const plan = planSeries({
+      startDate: date,
+      time: time!,
+      durationMin,
+      recurrence: recur,
+      occurrences,
+      appointments,
+    });
+    if (plan.created.length === 0) {
+      setError(
+        recur === 'none'
+          ? "Ce créneau vient d'être pris, choisissez-en un autre."
+          : 'Tous les créneaux demandés sont déjà occupés. Choisissez une autre heure ou une autre date.'
+      );
+      return;
     }
 
     setSaving(true);
     try {
-      const targetDates = createdDates.length > 0 ? createdDates : [date];
-      for (const d of targetDates) {
+      for (const d of plan.created) {
         addAppointment({
           patientName: patientName.trim(),
           patientPhone: patientPhone.trim() || undefined,
@@ -167,8 +195,8 @@ export default function NewAppointmentScreen() {
       } else {
         Alert.alert(
           'Série créée',
-          `${createdDates.length}/${seriesDates.length} créneau(x) programmé(s) sur ${occurrences} occurrence(s).` +
-            (skipped.length > 0 ? ` ${skipped.length} ignoré(s) (conflit).` : ''),
+          `${plan.created.length}/${plan.requested} créneau(x) programmé(s) sur ${occurrences} occurrence(s).` +
+            (plan.skipped.length > 0 ? ` ${plan.skipped.length} ignoré(s) (conflit).` : ''),
           [{ text: 'OK', onPress: () => navigation.goBack() }]
         );
       }
@@ -265,41 +293,45 @@ export default function NewAppointmentScreen() {
           ))}
         </View>
 
-        <Text style={[styles.label, { marginTop: 18 }]}>Récurrent</Text>
-        <View style={styles.wrap}>
-          {(
-            [
-              ['none', 'Une fois'],
-              ['weekly', 'Hebdo'],
-              ['biweekly', 'Bimensuel'],
-              ['monthly', 'Mensuel'],
-            ] as const
-          ).map(([value, label]) => (
-            <Chip
-              key={value}
-              label={label}
-              color={colors.primary}
-              active={recur === value}
-              onPress={() => setRecur(value)}
-              accessibilityLabel={`Récurrence ${label}`}
-            />
-          ))}
-        </View>
-        {recur !== 'none' && (
+        {!editing && (
           <>
-            <Text style={[styles.label, { marginTop: 18 }]}>Occurrences</Text>
+            <Text style={[styles.label, { marginTop: 18 }]}>Récurrent</Text>
             <View style={styles.wrap}>
-              {Array.from({ length: 11 }, (_, i) => i + 2).map(n => (
+              {(
+                [
+                  ['none', 'Une fois'],
+                  ['weekly', 'Hebdo'],
+                  ['biweekly', 'Bimensuel'],
+                  ['monthly', 'Mensuel'],
+                ] as const
+              ).map(([value, label]) => (
                 <Chip
-                  key={n}
-                  label={`${n}`}
+                  key={value}
+                  label={label}
                   color={colors.primary}
-                  active={occurrences === n}
-                  onPress={() => setOccurrences(n)}
-                  accessibilityLabel={`Occurrences ${n}`}
+                  active={recur === value}
+                  onPress={() => setRecur(value)}
+                  accessibilityLabel={`Récurrence ${label}`}
                 />
               ))}
             </View>
+            {recur !== 'none' && (
+              <>
+                <Text style={[styles.label, { marginTop: 18 }]}>Occurrences</Text>
+                <View style={styles.wrap}>
+                  {Array.from({ length: 11 }, (_, i) => i + 2).map(n => (
+                    <Chip
+                      key={n}
+                      label={`${n}`}
+                      color={colors.primary}
+                      active={occurrences === n}
+                      onPress={() => setOccurrences(n)}
+                      accessibilityLabel={`Occurrences ${n}`}
+                    />
+                  ))}
+                </View>
+              </>
+            )}
           </>
         )}
 
@@ -343,7 +375,7 @@ export default function NewAppointmentScreen() {
           ]}
           onPress={onSave}
           disabled={saving}
-          accessibilityLabel="Créer le rendez-vous"
+          accessibilityLabel={editing ? 'Enregistrer les modifications' : 'Créer le rendez-vous'}
           accessibilityRole="button"
         >
           {saving ? (
@@ -351,7 +383,15 @@ export default function NewAppointmentScreen() {
           ) : (
             <Ionicons name="checkmark" size={20} color={colors.white} />
           )}
-          <Text style={styles.saveText}>{saving ? 'Création...' : 'Créer le rendez-vous'}</Text>
+          <Text style={styles.saveText}>
+            {saving
+              ? editing
+                ? 'Enregistrement...'
+                : 'Création...'
+              : editing
+                ? 'Enregistrer les modifications'
+                : 'Créer le rendez-vous'}
+          </Text>
         </Pressable>
       </View>
     </KeyboardAvoidingView>

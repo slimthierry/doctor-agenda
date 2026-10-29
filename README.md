@@ -9,19 +9,32 @@ Application mobile d'**agenda médecin multi-établissements** avec rappels
 - React Navigation 7 (bottom tabs + native stack)
 - AsyncStorage (persistance locale — mode local-first)
 - expo-notifications (rappels push locaux)
+- Jest (preset `jest-expo`) — suite de tests de la couche domaine (`npm test`)
 - API centrale : `backend/agenda-central` (Python/FastAPI + Docker, contrat `backend/agenda-central/API.md`)
 
 ## Fonctionnalités
 
-- **Anti-chevauchement** : le moteur de créneaux de l'app reproduit les règles
-  du backend (`free_slots` / `overlaps`) — un RDV de durée X désactive les
-  créneaux chevauchants, y compris ceux réservés par un patient en ligne
+- **Couche domaine pure (`src/domain/`)** : toute la logique métier est centralisée
+  et testable hors React Native — créneaux, récurrences, machine à états, patients,
+  validation, statistiques
+- **Machine à états des statuts** : `à confirmer → confirmé → terminé / annulé`
+  avec transitions contrôlées (un RDV terminé ou annulé est terminal) ;
+  l'annulation retire automatiquement les rappels push programmés
+- **Anti-chevauchement** : le store lui-même refuse une création en conflit
+  (grade double avec l'UI) ; le moteur de créneaux reproduit les règles du
+  backend (`free_slots` / `overlaps`) en heure locale, avec gestion de buffer
+- **Rendez-vous récurrents** : hebdo / bimensuel / mensuel × N occurrences — la
+  détection de conflits est appliquée à **chaque date de la série** (occurrences
+  en conflit ignorées avec alerte), annulation des prochains de la série
+- **Validation complète** : toutes les erreurs sont remontées d'un coup
+  (nom, téléphone, date au format strict, date passée refusée, heure passée refusée)
+- **Patients** : agrégation dérivée avec normalisation du téléphone (`00` → `+`,
+  espaces retirés) et du nom (casse ignorée), RDV annulés exclus de l'historique,
+  autocomplete dans le formulaire, onglet « Patients »
+- **Statistiques du jour** : RDV du jour, confirmés, à confirmer, **taux
+  d'occupation** (minutes réservées / minutes disponibles selon les horaires)
 - **Disponibilités** : écran « Mes horaires » (7 jours, plages horaires) → créneaux
   pilotés localement puis miroir serveur (`PUT` / `GET /api/availability`)
-- **Rendez-vous récurrents** : hebdo / bimensuel / mensuel × N occurrences,
-  conflits d'occurrence ignorés avec alerte, annulation des prochains de la série
-- **Patients** : agrégation dérivée par téléphone (historique, visites, dernières
-  consultations), autocomplete dans le formulaire, onglet « Patients »
 - **Réservation patient** : lien `{serverUrl}/b/{slug}` (ex. `/b/dr-kpatcha`)
   servie par le backend (page HTML autonome), affichée / copiée / partagée dans
   les Réglages, boutons **Copier** / **Partager**
@@ -33,7 +46,7 @@ Application mobile d'**agenda médecin multi-établissements** avec rappels
   filtrage de l'agenda par établissement, établissement par défaut
 - **Rendez-vous** : patient, téléphone, créneau (07h–18h, pas de 30 min,
   créneaux occupés et heures passées désactivés), durée, motif
-- **Statuts** : à confirmer → confirmé → terminé / annulé
+- **Statuts** : à confirmer → confirmé → terminé / annulé (machine à états)
 - **Rappels patient** :
   - WhatsApp : ouverture de `wa.me` avec message pré-rempli
   - SMS : ouverture de l'app SMS avec message pré-rempli
@@ -57,6 +70,11 @@ cd backend/agenda-central && docker compose up -d
 cd mobile/doctor-agenda
 npm install
 npm start          # puis i / a selon la plateforme
+
+# Vérifications
+npm test           # tests métier (couche domain, indépendants de RN)
+npm run typecheck  # TypeScript strict
+npm run lint       # ESLint
 ```
 
 > Émulateur Android : utilisez `http://10.0.2.2:4400` comme URL du serveur.
@@ -71,6 +89,15 @@ doctor-agenda/
 ├── index.ts
 ├── app.json
 ├── src/
+│   ├── domain/                          # Couche métier pure (testable hors RN)
+│   │   ├── appointment.ts               # Factory de création, id/serie
+│   │   ├── schedule.ts                  # Créneaux libres, chevauchements, occupation
+│   │   ├── recurrence.ts                # Séries hebdo/bimensuel/mensuel + planification
+│   │   ├── status.ts                    # Machine à états des statuts
+│   │   ├── patients.ts                  # Agrégation + normalisation patients
+│   │   ├── validation.ts                # Validation complète du formulaire
+│   │   ├── stats.ts                     # KPI jour (total, occupation…)
+│   │   └── __tests__/                   # 55 tests Jest couvrant les règles métier
 │   ├── navigation/RootNavigator.tsx   # Tabs + stack (modal création, détail)
 │   ├── screens/
 │   │   ├── AgendaScreen.tsx           # Vue jour + filtres + stats + FAB
@@ -85,14 +112,14 @@ doctor-agenda/
 │   │   ├── storage.ts                 # Persistance AsyncStorage
 │   │   ├── api.ts                     # Client agenda central (push/pull)
 │   │   └── notifications.ts           # Push + WhatsApp + SMS
-│   ├── store/StoreContext.tsx         # État global + syncNow()
+│   ├── store/StoreContext.tsx         # État global + syncNow() (garde anti-conflit)
 │   ├── types/index.ts
 │   ├── theme.ts                       # Couleurs (vert LIKMED #179F4E)
-│   └── utils/date.ts                  # Dates FR, créneaux
+│   └── utils/date.ts                  # Dates FR
 └── package.json
 ```
 
 ## Évolutions prévues
 
 - Sync automatique (arrière-plan) + synchro des établissements
-- No-show, stats/KPI, onboarding, plans d'abonnement (P2/P3)
+- No-show (nouveau statut dans la machine à états), vue semaine, onboarding, plans d'abonnement (P2/P3)

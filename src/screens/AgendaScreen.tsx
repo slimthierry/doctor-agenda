@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import AppointmentCard from '../components/AppointmentCard';
 import Chip from '../components/Chip';
 import DayStrip from '../components/DayStrip';
+import { dayStats, defaultRules } from '../domain';
 import { useStore } from '../store/StoreContext';
 import { colors, radius, shadow } from '../theme';
 import { RootStackParamList } from '../types';
@@ -17,7 +18,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export default function AgendaScreen() {
   const navigation = useNavigation<Nav>();
-  const { appointmentsOn, establishments, settings } = useStore();
+  const { appointmentsOn, appointments, establishments, availability, settings } = useStore();
 
   const [date, setDate] = useState(todayISO());
   const [filterId, setFilterId] = useState<string | undefined>();
@@ -28,8 +29,14 @@ export default function AgendaScreen() {
     [all, filterId]
   );
 
-  const confirmed = all.filter(a => a.status === 'confirmed').length;
-  const pending = all.filter(a => a.status === 'draft').length;
+  const rules = useMemo(
+    () => (availability.length > 0 ? availability : defaultRules()),
+    [availability]
+  );
+  const stats = useMemo(
+    () => dayStats(appointments, date, rules, filterId),
+    [appointments, date, rules, filterId]
+  );
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -87,9 +94,25 @@ export default function AgendaScreen() {
       </View>
 
       <View style={styles.statsRow}>
-        <Stat label="RDV du jour" value={all.length} bg={colors.white} />
-        <Stat label="Confirmés" value={confirmed} bg={colors.successSoft} fg={colors.success} />
-        <Stat label="À confirmer" value={pending} bg={colors.warningSoft} fg={colors.warning} />
+        <Stat label="RDV du jour" value={stats.total} bg={colors.white} />
+        <Stat
+          label="Confirmés"
+          value={stats.confirmed}
+          bg={colors.successSoft}
+          fg={colors.success}
+        />
+        <Stat
+          label="À confirmer"
+          value={stats.pending}
+          bg={colors.warningSoft}
+          fg={colors.warning}
+        />
+        <Stat
+          label="Occupation"
+          value={stats.occupancy === null ? '—' : `${stats.occupancy}%`}
+          bg={colors.primarySoft}
+          fg={colors.primary}
+        />
       </View>
 
       <FlatList
@@ -132,7 +155,7 @@ function Stat({
   fg = colors.text,
 }: {
   label: string;
-  value: number;
+  value: number | string;
   bg: string;
   fg?: string;
 }) {
@@ -195,8 +218,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  statValue: { fontSize: 20, fontWeight: '800' },
-  statLabel: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
+  statValue: { fontSize: 18, fontWeight: '800' },
+  statLabel: { fontSize: 10.5, color: colors.textMuted, marginTop: 2 },
   list: { padding: 16, paddingBottom: 110 },
   empty: { alignItems: 'center', paddingTop: 48, gap: 8 },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: colors.text },

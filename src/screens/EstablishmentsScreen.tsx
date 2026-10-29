@@ -27,15 +27,29 @@ export default function EstablishmentsScreen() {
   }
 
   function onRemove(id: string, label: string) {
-    const count = appointments.filter(a => a.establishmentId === id).length;
+    const count = appointments.filter(
+      a => a.establishmentId === id && a.status !== 'canceled'
+    ).length;
     Alert.alert(
       'Supprimer',
       count > 0
-        ? `"${label}" a ${count} rendez-vous associés qui resteront dans l\'historique. Supprimer ?`
+        ? `"${label}" a ${count} rendez-vous actifs. Supprimer ?`
         : `Supprimer "${label}" ?`,
       [
         { text: 'Annuler', style: 'cancel' },
-        { text: 'Supprimer', style: 'destructive', onPress: () => removeEstablishment(id) },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: () => {
+            const removed = removeEstablishment(id);
+            if (!removed) {
+              Alert.alert(
+                'Suppression impossible',
+                `"${label}" héberge encore des rendez-vous. Annulez-les ou supprimez-les avant de retirer l'établissement.`
+              );
+            }
+          },
+        },
       ]
     );
   }
@@ -45,7 +59,7 @@ export default function EstablishmentsScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Établissements</Text>
         <Text style={styles.subtitle}>
-          Vos lieux d'exercice : chaque rendez-vous peut être rattaché à l'un d'eux.
+          Vos lieux d&apos;exercice : chaque rendez-vous peut être rattaché à l&apos;un d&apos;eux.
         </Text>
 
         {establishments.map(est => {

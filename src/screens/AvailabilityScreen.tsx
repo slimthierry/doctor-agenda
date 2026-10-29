@@ -1,17 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import Chip from '../components/Chip';
+import { defaultRules, validateAvailabilityRules } from '../domain';
 import { useStore } from '../store/StoreContext';
 import { colors, radius, shadow } from '../theme';
-import { AvailabilityRule, RootStackParamList } from '../types';
-import { defaultRules } from '../utils/slots';
-import { minutesOf } from '../utils/date';
-
-type Nav = NativeStackNavigationProp<RootStackParamList>;
+import { AvailabilityRule } from '../types';
 
 const WEEKDAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 
@@ -24,13 +19,13 @@ const TIME_OPTIONS: string[] = (() => {
 })();
 
 export default function AvailabilityScreen() {
-  const navigation = useNavigation<Nav>();
   const { availability, saveAvailability } = useStore();
   const [rules, setRules] = useState<AvailabilityRule[]>(
     availability.length > 0 ? availability : defaultRules()
   );
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const rows = useMemo(() => {
     const map = new Map<number, AvailabilityRule>();
@@ -41,22 +36,20 @@ export default function AvailabilityScreen() {
   }, [rules]);
 
   function patch(weekday: number, field: 'start' | 'end', value: string) {
+    setError(null);
     setRules(prev => prev.map(r => (r.weekday === weekday ? { ...r, [field]: value } : r)));
   }
 
   function toggleClosed(weekday: number) {
+    setError(null);
     setRules(prev => prev.map(r => (r.weekday === weekday ? { ...r, end: r.start } : r)));
   }
 
   async function onSave() {
-    for (const r of rules) {
-      if (r.start >= r.end) {
-        if (r.start === r.end) continue;
-        return;
-      }
-      if (minutesOf(r.end) - minutesOf(r.start) < 30) {
-        return;
-      }
+    const issues = validateAvailabilityRules(rules);
+    if (issues.length > 0) {
+      setError(issues.map(i => i.message).join('\n'));
+      return;
     }
     setSaving(true);
     try {
@@ -131,6 +124,12 @@ export default function AvailabilityScreen() {
             </View>
           ))}
         </View>
+        {!!error && (
+          <View style={styles.errorBox}>
+            <Ionicons name="alert-circle" size={16} color={colors.danger} />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
       </ScrollView>
       <View style={styles.footer}>
         <Pressable
@@ -167,6 +166,16 @@ const styles = StyleSheet.create({
     ...shadow.card,
   },
   row: { gap: 10 },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    backgroundColor: colors.dangerSoft,
+    borderRadius: radius.md,
+    padding: 10,
+    marginTop: 4,
+  },
+  errorText: { color: colors.danger, fontSize: 13, fontWeight: '600', flex: 1 },
   rowHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   day: { fontSize: 15, fontWeight: '800', color: colors.text },
   times: { flexDirection: 'row', gap: 12 },

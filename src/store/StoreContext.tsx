@@ -1,5 +1,20 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
+import {
+  aggregatePatients,
+  buildUpdatePatch,
+  conflictsWith,
+  createAppointment,
+  pendingPushReminders,
+} from '../domain';
 import {
   fetchAvailability,
   fetchMe,
@@ -10,6 +25,7 @@ import {
   putAvailability,
   toServer,
 } from '../services/api';
+import { scheduleReminder } from '../services/notifications';
 import {
   loadAppointments,
   loadAvailability,
@@ -25,12 +41,13 @@ import {
   Appointment,
   AvailabilityRule,
   Establishment,
+  NewAppointmentInput,
   PatientSummary,
   Settings,
   SyncResult,
 } from '../types';
 import { addDays, todayISO } from '../utils/date';
-import { colors, palette } from '../theme';
+import { palette } from '../theme';
 
 interface StoreValue {
   ready: boolean;
@@ -40,13 +57,11 @@ interface StoreValue {
   syncing: boolean;
   availability: AvailabilityRule[];
   saveAvailability: (rules: AvailabilityRule[]) => Promise<void>;
-  addAppointment: (
-    data: Omit<Appointment, 'id' | 'createdAt' | 'status' | 'updatedAt'>
-  ) => Appointment;
+  addAppointment: (data: NewAppointmentInput) => Appointment;
   updateAppointment: (id: string, patch: Partial<Appointment>) => void;
   removeAppointment: (id: string) => void;
   addEstablishment: (name: string, address?: string, color?: string) => Establishment;
-  removeEstablishment: (id: string) => void;
+  removeEstablishment: (id: string) => boolean;
   updateSettings: (patch: Partial<Settings>) => void;
   loadDemoData: () => void;
   syncNow: () => Promise<SyncResult>;
@@ -55,10 +70,6 @@ interface StoreValue {
 }
 
 const StoreContext = createContext<StoreValue | null>(null);
-
-function uid(): string {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-}
 
 const SEED_ESTABLISHMENTS: Establishment[] = [
   { id: 'est-cabinet', name: 'Cabinet médical – Lomé', address: 'Lomé, Togo', color: palette[0] },
@@ -73,6 +84,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [syncing, setSyncing] = useState(false);
   const [availability, setAvailability] = useState<AvailabilityRule[]>([]);
+  const appointmentsRef = useRef<Appointment[]>([]);
+
+  const dismissedRemindersRef = useRef<Set<string>>(new Set());
+  const autoScheduledRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     (async () => {
@@ -82,8 +97,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         loadSettings(),
         loadAvailability(),
       ]);
-      // Rétrocompat : les anciens RDV n'ont pas updatedAt
-      setAppointments(a.map(x => ({ ...x, updatedAt: x.updatedAt ?? x.createdAt })));
+      const retro = a.map(x => ({ ...x, updatedAt: x.updatedAt ?? x.createdAt }));
+      appointmentsRef.current = retro;
+      setAppointments(retro);
       setEstablishments(e.length ? e : SEED_ESTABLISHMENTS);
       if (!e.length) await saveEstablishments(SEED_ESTABLISHMENTS);
       setSettings(s);
@@ -92,7 +108,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
-  const persistAppointments = useCallback((list: Appointment[]) => {
+  const commitAppointments = useCallback((list: Appointment[]) => {
+    appointmentsRef.current = list;
     setAppointments(list);
     void saveAppointments(list);
   }, []);
@@ -117,58 +134,68 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [settings]
   );
 
-  const addAppointment = useCallback<StoreValue['addAppointment']>(data => {
-    const now = new Date().toISOString();
-    const appt: Appointment = {
-      ...data,
-      id: uid(),
-      status: 'draft',
-      createdAt: now,
-      updatedAt: now,
-    };
-    setAppointments(prev => {
-      const next = [...prev, appt];
-      void saveAppointments(next);
-      return next;
-    });
-    return appt;
-  }, []);
+  const addAppointment = useCallback<StoreValue['addAppointment']>(
+    data => {
+      const clash = conflictsWith(appointmentsRef.current, {
+        date: data.date,
+        time: data.time,
+        durationMin: data.durationMin,
+      });
+      if (clash) {
+        throw new Error("Ce créneau vient d'être pris, choisissez-en un autre.");
+      }
+      const appt = createAppointment(data, new Date().toISOString());
+      commitAppointments([...appointmentsRef.current, appt]);
+      return appt;
+    },
+    [commitAppointments]
+  );
 
-  const updateAppointment = useCallback<StoreValue['updateAppointment']>((id, patch) => {
-    setAppointments(prev => {
-      const next = prev.map(a =>
-        a.id === id ? { ...a, ...patch, updatedAt: new Date().toISOString() } : a
+  const updateAppointment = useCallback<StoreValue['updateAppointment']>(
+    (id, patch) => {
+      const current = appointmentsRef.current.find(a => a.id === id);
+      if (!current) return;
+      const slot = {
+        date: patch.date ?? current.date,
+        time: patch.time ?? current.time,
+        durationMin: patch.durationMin ?? current.durationMin,
+      };
+      if ((patch.date ?? patch.time ?? patch.durationMin) !== undefined) {
+        const moved =
+          slot.date !== current.date ||
+          slot.time !== current.time ||
+          slot.durationMin !== current.durationMin;
+        if (moved && conflictsWith(appointmentsRef.current, slot, id)) {
+          throw new Error('Le nouveau créneau entre en conflit avec un rendez-vous existant.');
+        }
+      } else if (patch.reminderId === undefined && current.reminderId) {
+        dismissedRemindersRef.current.add(id);
+      }
+      const next = { ...current, ...buildUpdatePatch(current, patch, new Date().toISOString()) };
+      commitAppointments(
+        appointmentsRef.current.map(a => (a.id === id ? (next as Appointment) : a))
       );
-      void saveAppointments(next);
-      return next;
-    });
-  }, []);
+    },
+    [commitAppointments]
+  );
 
-  const removeAppointment = useCallback<StoreValue['removeAppointment']>(id => {
-    setAppointments(prev => {
-      const next = prev.filter(a => a.id !== id);
-      void saveAppointments(next);
-      return next;
-    });
-  }, []);
+  const removeAppointment = useCallback<StoreValue['removeAppointment']>(
+    id => {
+      commitAppointments(appointmentsRef.current.filter(a => a.id !== id));
+    },
+    [commitAppointments]
+  );
 
   const addEstablishment = useCallback<StoreValue['addEstablishment']>(
     (name, address, color) => {
       const est: Establishment = {
-        id: uid(),
+        id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
         name,
         address,
         color: color || palette[establishments.length % palette.length],
       };
       persistEstablishments([...establishments, est]);
       return est;
-    },
-    [establishments, persistEstablishments]
-  );
-
-  const removeEstablishment = useCallback<StoreValue['removeEstablishment']>(
-    id => {
-      persistEstablishments(establishments.filter(e => e.id !== id));
     },
     [establishments, persistEstablishments]
   );
@@ -181,49 +208,76 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const removeEstablishment = useCallback<StoreValue['removeEstablishment']>(
+    id => {
+      const activeCount = appointmentsRef.current.filter(
+        a => a.establishmentId === id && a.status !== 'canceled'
+      ).length;
+      if (activeCount > 0) return false;
+      persistEstablishments(establishments.filter(e => e.id !== id));
+      if (settings.defaultEstablishmentId === id) {
+        updateSettings({ defaultEstablishmentId: undefined });
+      }
+      return true;
+    },
+    [establishments, persistEstablishments, settings.defaultEstablishmentId, updateSettings]
+  );
+
   const loadDemoData = useCallback(() => {
     const today = todayISO();
     const tomorrow = addDays(today, 1);
-    const demo: Appointment[] = [
-      {
-        id: uid(),
-        patientName: 'Afi SODJI',
-        patientPhone: '+22890000001',
-        establishmentId: establishments[0]?.id ?? 'est-cabinet',
-        date: today,
-        time: '08:30',
-        durationMin: 30,
-        reason: 'Consultation de suivi',
-        status: 'confirmed',
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: uid(),
-        patientName: 'Koffi AMEGAN',
-        patientPhone: '+22890000002',
-        establishmentId: establishments[0]?.id ?? 'est-cabinet',
-        date: today,
-        time: '10:00',
-        durationMin: 20,
-        reason: 'Première consultation',
-        status: 'draft',
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: uid(),
-        patientName: 'Mensah WAFA',
-        patientPhone: '+22890000003',
-        establishmentId: establishments[1]?.id ?? 'est-chu',
-        date: tomorrow,
-        time: '09:30',
-        durationMin: 45,
-        reason: 'Bilan annuel',
-        status: 'confirmed',
-        createdAt: new Date().toISOString(),
-      },
+    const now = new Date().toISOString();
+    const createDemo = (
+      patientName: string,
+      patientPhone: string,
+      establishmentId: string,
+      date: string,
+      time: string,
+      durationMin: number,
+      reason: string,
+      status: Appointment['status']
+    ): Appointment => {
+      const appt = createAppointment(
+        { patientName, patientPhone, establishmentId, date, time, durationMin, reason },
+        now
+      );
+      appt.status = status;
+      return appt;
+    };
+    const demo = [
+      createDemo(
+        'Afi SODJI',
+        '+22890000001',
+        establishments[0]?.id ?? 'est-cabinet',
+        today,
+        '08:30',
+        30,
+        'Consultation de suivi',
+        'confirmed'
+      ),
+      createDemo(
+        'Koffi AMEGAN',
+        '+22890000002',
+        establishments[0]?.id ?? 'est-cabinet',
+        today,
+        '10:00',
+        20,
+        'Première consultation',
+        'draft'
+      ),
+      createDemo(
+        'Mensah WAFA',
+        '+22890000003',
+        establishments[1]?.id ?? 'est-chu',
+        tomorrow,
+        '09:30',
+        45,
+        'Bilan annuel',
+        'confirmed'
+      ),
     ];
-    persistAppointments([...appointments, ...demo]);
-  }, [appointments, establishments, persistAppointments]);
+    commitAppointments([...appointmentsRef.current, ...demo]);
+  }, [establishments, commitAppointments]);
 
   const syncNow = useCallback<StoreValue['syncNow']>(async () => {
     if (!isServerConfigured(settings)) {
@@ -239,21 +293,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
     setSyncing(true);
     try {
-      // 1. Pousser l'état local (upsert idempotent côté serveur)
-      const local = appointments.map(a => ({
+      const local = appointmentsRef.current.map(a => ({
         ...a,
         updatedAt: a.updatedAt ?? a.createdAt,
       }));
       const pushRes = await pushAppointments(base, key, local.map(toServer));
 
-      // 2. Tirer les changements serveur depuis la dernière synchro
       const pullRes = await pullAppointments(
         base,
         key,
         settings.lastSyncAt ?? '1970-01-01T00:00:00.000Z'
       );
 
-      // 2b. Tirer les disponibilités serveur (miroir du local-first)
+      let nextSettings = { ...settings };
+
       let serverRules: AvailabilityRule[] | null = null;
       try {
         serverRules = await fetchAvailability(base, key);
@@ -265,17 +318,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         void persistAvailability(serverRules);
       }
 
-      // 2c. Memoriser le slug public du médecin (lien /b/{slug} de reservation patient)
       try {
         const me = await fetchMe(base, key);
-        const nextSettings = { ...settings, doctorSlug: me.doctor.slug };
-        setSettings(nextSettings);
-        void saveSettings(nextSettings);
+        nextSettings = { ...nextSettings, doctorSlug: me.doctor.slug };
       } catch {
         // non bloquant : le lien reste utilisable avec le slug saisi dans les reglages
       }
 
-      // 3. Fusion last-write-wins sur updatedAt
       const map = new Map<string, Appointment>(local.map(a => [a.id, a]));
       for (const s of pullRes.appointments) {
         const incoming = fromServer(s);
@@ -288,12 +337,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         const incomingU = incoming.updatedAt ?? incoming.createdAt;
         if (incomingU > currentU) map.set(incoming.id, incoming);
       }
-      const merged = [...map.values()];
-      setAppointments(merged);
-      void saveAppointments(merged);
+      commitAppointments([...map.values()]);
 
-      // 4. Mémoriser la date de synchro
-      const nextSettings = { ...settings, lastSyncAt: pullRes.server_time };
+      nextSettings = { ...nextSettings, lastSyncAt: pullRes.server_time };
       setSettings(nextSettings);
       void saveSettings(nextSettings);
 
@@ -330,7 +376,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setSyncing(false);
     }
-  }, [appointments, settings]);
+  }, [settings, commitAppointments]);
 
   const appointmentsOn = useCallback(
     (date: string, establishmentId?: string) =>
@@ -341,30 +387,30 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [appointments]
   );
 
-  const patients = useMemo<PatientSummary[]>(() => {
-    const map = new Map<string, PatientSummary>();
-    for (const a of appointments) {
-      const phone = (a.patientPhone ?? '').trim();
-      const key = phone || a.patientName.trim();
-      const existing = map.get(key);
-      if (existing) {
-        existing.visits += 1;
-        if (a.date > existing.lastDate) {
-          existing.lastDate = a.date;
-          existing.name = a.patientName;
+  const patients = useMemo<PatientSummary[]>(() => aggregatePatients(appointments), [appointments]);
+
+  useEffect(() => {
+    if (!ready || settings.autoReminders === false) return;
+    const targets = pendingPushReminders(appointments, {
+      leadMin: settings.reminderLeadMin,
+      nowMs: Date.now(),
+    });
+    void (async () => {
+      for (const appt of targets) {
+        const key = `${appt.id}:${settings.reminderLeadMin}`;
+        if (autoScheduledRef.current.has(key) || dismissedRemindersRef.current.has(appt.id)) {
+          continue;
         }
-      } else {
-        map.set(key, {
-          id: key,
-          name: a.patientName,
-          phone,
-          visits: 1,
-          lastDate: a.date,
-        });
+        autoScheduledRef.current.add(key);
+        const reminderId = await scheduleReminder(appt, settings);
+        if (reminderId) {
+          updateAppointment(appt.id, { reminderId });
+        } else {
+          autoScheduledRef.current.delete(key);
+        }
       }
-    }
-    return [...map.values()].sort((x, y) => y.lastDate.localeCompare(x.lastDate));
-  }, [appointments]);
+    })();
+  }, [ready, appointments, settings, updateAppointment]);
 
   const value = useMemo<StoreValue>(
     () => ({
@@ -414,17 +460,4 @@ export function useStore(): StoreValue {
   const ctx = useContext(StoreContext);
   if (!ctx) throw new Error('useStore doit être utilisé dans StoreProvider');
   return ctx;
-}
-
-export function statusMeta(status: Appointment['status']) {
-  switch (status) {
-    case 'confirmed':
-      return { label: 'Confirmé', bg: colors.successSoft, fg: colors.success };
-    case 'done':
-      return { label: 'Terminé', bg: colors.infoSoft, fg: colors.info };
-    case 'canceled':
-      return { label: 'Annulé', bg: colors.dangerSoft, fg: colors.danger };
-    default:
-      return { label: 'À confirmer', bg: colors.warningSoft, fg: colors.warning };
-  }
 }

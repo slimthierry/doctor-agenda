@@ -12,6 +12,7 @@ const KEY = {
 export const DEFAULT_SETTINGS: Settings = {
   doctorName: 'Dr',
   reminderLeadMin: 60,
+  autoReminders: true,
   serverUrl: 'http://localhost:4400',
   doctorApiKey: 'demo-key-kpatcha',
 };

@@ -38,5 +38,13 @@
   },
   "env": {
     "react-native/react-native": true
-  }
+  },
+  "overrides": [
+    {
+      "files": ["**/__tests__/**/*.ts", "**/__tests__/**/*.tsx"],
+      "env": {
+        "jest": true
+      }
+    }
+  ]
 }

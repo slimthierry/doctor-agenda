@@ -19,7 +19,8 @@ import {
   sendSMS,
   sendWhatsApp,
 } from '../services/notifications';
-import { statusMeta, useStore } from '../store/StoreContext';
+import { canTransition, statusMeta } from '../domain';
+import { useStore } from '../store/StoreContext';
 import { colors, radius, shadow } from '../theme';
 import { RootStackParamList } from '../types';
 import { formatDuration, formatLongDate } from '../utils/date';
@@ -51,7 +52,7 @@ export default function AppointmentDetailScreen() {
   if (!appt) {
     return (
       <View style={styles.missing}>
-        <Text style={styles.missingText}>Ce rendez-vous n'existe plus.</Text>
+        <Text style={styles.missingText}>Ce rendez-vous n&apos;existe plus.</Text>
       </View>
     );
   }
@@ -60,11 +61,23 @@ export default function AppointmentDetailScreen() {
   const meta = statusMeta(appt.status);
   const message = buildReminderMessage(appt, est, settings);
 
-  async function setStatus(status: 'confirmed' | 'done' | 'canceled') {
+  async function setStatus(next: 'confirmed' | 'done' | 'canceled') {
     setLoading(true);
     try {
-      updateAppointment(appt!.id, { status });
-    } catch (e) {
+      if (!canTransition(appt!.status, next)) {
+        Alert.alert(
+          'Action impossible',
+          `Un rendez-vous « ${statusMeta(appt!.status).label} » ne peut pas passer à « ${statusMeta(next).label} ».`
+        );
+        return;
+      }
+      if (next === 'canceled' && appt!.reminderId) {
+        await cancelReminder(appt!.reminderId);
+        updateAppointment(appt!.id, { status: next, reminderId: undefined });
+      } else {
+        updateAppointment(appt!.id, { status: next });
+      }
+    } catch {
       Alert.alert('Erreur', 'Impossible de modifier le statut.');
     } finally {
       setLoading(false);
@@ -210,6 +223,17 @@ export default function AppointmentDetailScreen() {
           </View>
         )}
 
+        {(appt.status === 'draft' || appt.status === 'confirmed') && (
+          <View style={[styles.actionsRow, styles.singleRow]}>
+            <ActionBtn
+              icon="create-outline"
+              label="Modifier le rendez-vous"
+              color={colors.primaryDark}
+              onPress={() => navigation.navigate('NewAppointment', { editId: appt.id })}
+            />
+          </View>
+        )}
+
         {!!seriesId && seriesUpcoming.length > 0 && (
           <View style={styles.actionsRow}>
             <ActionBtn
@@ -220,7 +244,13 @@ export default function AppointmentDetailScreen() {
                 setLoading(true);
                 try {
                   for (const a of seriesUpcoming) {
-                    updateAppointment(a.id, { status: 'canceled' });
+                    if (a.reminderId) await cancelReminder(a.reminderId);
+                    updateAppointment(
+                      a.id,
+                      a.reminderId
+                        ? { status: 'canceled', reminderId: undefined }
+                        : { status: 'canceled' }
+                    );
                   }
                   Alert.alert(
                     'Série annulée',
@@ -351,6 +381,7 @@ const styles = StyleSheet.create({
   },
   detailValue: { fontSize: 14.5, color: colors.text, marginTop: 1 },
   actionsRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  singleRow: { marginTop: 10 },
   action: {
     flex: 1,
     backgroundColor: colors.white,

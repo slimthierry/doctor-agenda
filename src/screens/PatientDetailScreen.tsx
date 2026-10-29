@@ -1,11 +1,11 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { patientKey } from '../domain';
 import AppointmentCard from '../components/AppointmentCard';
 import { useStore } from '../store/StoreContext';
-import { colors, radius, shadow } from '../theme';
+import { colors } from '../theme';
 import { RootStackParamList } from '../types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -14,20 +14,18 @@ type R = RouteProp<RootStackParamList, 'PatientDetail'>;
 export default function PatientDetailScreen() {
   const navigation = useNavigation<Nav>();
   const { params } = useRoute<R>();
-  const { appointments, establishments } = useStore();
+  const { appointments } = useStore();
 
-  const patient = appointments.find(
-    a => (a.patientPhone ?? '').trim() === params.id || a.patientName.trim() === params.id
-  );
+  const patient = appointments.find(a => patientKey(a) === params.id);
 
   const history = appointments
-    .filter(a => (a.patientPhone ?? '').trim() === params.id || a.patientName.trim() === params.id)
+    .filter(a => patientKey(a) === params.id)
     .sort((x, y) => y.date.localeCompare(x.date));
 
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Historique patient</Text>
+        <Text style={styles.title}>{patient?.patientName ?? 'Historique patient'}</Text>
         {history.length === 0 && <Text style={styles.empty}>Aucun rendez-vous trouvé.</Text>}
         {history.map(a => (
           <AppointmentCard
